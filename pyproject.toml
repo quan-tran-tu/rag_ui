@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "rag-ui"
+version = "0.1.0"
+description = ""
+authors = ["tuquan"]
+readme = "README.md"
+packages = [{ include = "rag_ui", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+dash = "^2.18.2"
+ollama = "^0.4.7"
+pymilvus = "^2.5.4"
+markitdown = "^0.0.1a3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
