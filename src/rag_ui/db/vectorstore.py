@@ -3,6 +3,7 @@ from pymilvus import MilvusClient
 from rag_ui.data.preprocessing import to_chunks
 from rag_ui.inference.ollama_client import ollama_embed_response
 
+MILVUS_METRIC_TYPE = "COSINE"
 
 def init_milvus_client():
     # temporary hard-code endpoint
@@ -26,7 +27,7 @@ def create_collection(client, collection_name: str, dim: int):
     return client.create_collection(
         collection_name=collection_name,
         dimension=dim,
-        metric_type="IP",
+        metric_type=MILVUS_METRIC_TYPE,
         consistency_level="Strong",
         auto_id=True,
     )
@@ -37,7 +38,7 @@ def get_search_results(client, collection_name: str, query_vector, output_fields
         collection_name=collection_name,
         data=[query_vector],
         limit=3,
-        search_params={"metric_type": "IP", "params": {}},  # Inner product distance
+        search_params={"metric_type": MILVUS_METRIC_TYPE, "params": {}},  # Inner product distance
         output_fields=output_fields, # A list of str represents output fields
     )
     return search_res

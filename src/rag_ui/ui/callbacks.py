@@ -157,6 +157,7 @@ def register_callbacks(app, *args):
                     # Search for similar embeddings in the Milvus database
                     search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
                     retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
+                    print("retrieved text: ", retrieved)
                     context = "\n".join([f"File: {file_path}\nRelevance Text: {text}" for file_path, text in retrieved])
                     full_prompts = construct_prompt(context, latest_user_message)
                     # Get the assistant's response from Ollama

@@ -19,6 +19,7 @@ def to_chunks(text: str) -> list[str]:
     chunks = []
     current_chunk = []
     current_estimate_token_count = 0
+    n_offload = 7800
 
     sentences = text.split(".")
     for sentence in sentences:
@@ -27,8 +28,11 @@ def to_chunks(text: str) -> list[str]:
             continue
 
         # Considering each word is a token
-        estimate_token_count = len([word.strip() for word in sentence.split(" ") if word.strip() != ""])
-        if current_estimate_token_count + estimate_token_count <= EMBEDDING_MAX_TOKENS - 1000:
+        words = [word.strip() for word in sentence.split(" ") if word.strip() != ""]
+        # Check UTF-8
+        new_words = [word for word in words if word.encode("utf-8")]
+        estimate_token_count = len(new_words)
+        if current_estimate_token_count + estimate_token_count <= EMBEDDING_MAX_TOKENS - n_offload:
             current_chunk.append(sentence)
             current_estimate_token_count += estimate_token_count
         else:
