@@ -1,6 +1,7 @@
 from flask import request
 import dash
 from dash import Output, Input, State, clientside_callback, ClientsideFunction
+import ffmpeg
 
 from rag_ui.db.vectorstore import init_milvus_client, create_collection
 from rag_ui.core.config import EMBEDDING_DIM
@@ -87,9 +88,19 @@ def save_audio():
         return "No file received", 400
     
     audio_file = request.files["audio"]
-    save_path = "./src/rag_ui/data/audio/recorded_audio.wav"
+    save_path = "./src/rag_ui/data/audio/recorded_audio.webm"
+    wav_path = "./src/rag_ui/data/audio/recorded_audio.wav"
     audio_file.save(save_path)
-    return "Audio saved successfully", 200
+    try:
+        (
+            ffmpeg
+                .input(save_path)
+                .output(wav_path, acodec="pcm_s16le", ar="16000", ac=1)
+                .run(overwrite_output=True)
+        )
+        return "Audio saved successfully", 200
+    except ffmpeg.Error as e:
+        print(f"Error ffmpeg conversion: {e}")
 
 clientside_callback(
     ClientsideFunction(
