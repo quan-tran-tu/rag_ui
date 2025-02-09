@@ -104,6 +104,8 @@ layout = html.Div(
         dcc.Store(id="alert-store", data=""),
         # Alert box
         dcc.ConfirmDialog(id="alert-box"),
+        # Recording state
+        dcc.Store(id="recording-store", data=False),
         
         # Chat container (positioned below the widget bar).
         html.Div(
@@ -140,9 +142,8 @@ layout = html.Div(
                         "outline": "none",
                     }
                 ),
-                # Button with an icon (initially a microphone).
                 html.Button(
-                    id="speech-to-text-btn",
+                    id="record-btn",
                     n_clicks=0,
                     style={
                         "background": "#007BFF",
@@ -152,7 +153,20 @@ layout = html.Div(
                         "cursor": "pointer",
                         "fontSize": "16px",
                     },
-                    children=html.I(id="button-icon", className="fas fa-microphone")
+                    children=html.I(id="record-icon", className="fas fa-microphone")
+                ),
+                html.Button(
+                    id="enter-btn",
+                    n_clicks=0,
+                    style={
+                        "background": "#007BFF",
+                        "border": "none",
+                        "padding": "15px",
+                        "color": "#fff",
+                        "cursor": "pointer",
+                        "fontSize": "16px",
+                    },
+                    children=html.I(id="enter-icon", className="fas fa-arrow-up")
                 )
             ]
         )

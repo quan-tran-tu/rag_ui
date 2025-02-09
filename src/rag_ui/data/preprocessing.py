@@ -1,6 +1,6 @@
 from markitdown import MarkItDown
 
-from rag_ui.core.config import EMBEDDING_MAX_TOKENS
+from rag_ui.core.config import EMBEDDING_MAX_WORDS
 
 def to_text(file_path: str) -> str:
     """
@@ -19,7 +19,6 @@ def to_chunks(text: str) -> list[str]:
     chunks = []
     current_chunk = []
     current_estimate_token_count = 0
-    n_offload = 7800
 
     sentences = text.split(".")
     for sentence in sentences:
@@ -32,7 +31,7 @@ def to_chunks(text: str) -> list[str]:
         # Check UTF-8
         new_words = [word for word in words if word.encode("utf-8")]
         estimate_token_count = len(new_words)
-        if current_estimate_token_count + estimate_token_count <= EMBEDDING_MAX_TOKENS - n_offload:
+        if current_estimate_token_count + estimate_token_count <= EMBEDDING_MAX_WORDS:
             current_chunk.append(sentence)
             current_estimate_token_count += estimate_token_count
         else:

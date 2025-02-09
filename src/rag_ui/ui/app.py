@@ -1,4 +1,6 @@
+from flask import request
 import dash
+from dash import Output, Input, State, clientside_callback, ClientsideFunction
 
 from rag_ui.db.vectorstore import init_milvus_client, create_collection
 from rag_ui.core.config import EMBEDDING_DIM
@@ -78,6 +80,27 @@ app.layout = layout
 # Register all callbacks with the app.
 from rag_ui.ui.callbacks import register_callbacks
 register_callbacks(app, milvus_client)
+
+@app.server.route("/save_audio", methods=["POST"])
+def save_audio():
+    if "audio" not in request.files:
+        return "No file received", 400
+    
+    audio_file = request.files["audio"]
+    save_path = "./src/rag_ui/data/audio/recorded_audio.wav"
+    audio_file.save(save_path)
+    return "Audio saved successfully", 200
+
+clientside_callback(
+    ClientsideFunction(
+        namespace='clientside',
+        function_name='toggleRecording'
+    ),
+    Output("recording-store", "data"),
+    Input("record-btn", "n_clicks"),
+    State("recording-store", "data"),
+    prevent_initial_call=True
+)
 
 
 if __name__ == '__main__':

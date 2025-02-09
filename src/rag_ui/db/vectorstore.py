@@ -2,6 +2,7 @@ from pymilvus import MilvusClient
 
 from rag_ui.data.preprocessing import to_chunks
 from rag_ui.inference.ollama_client import ollama_embed_response
+from rag_ui.core.config import EMBEDDING_MODEL
 
 MILVUS_METRIC_TYPE = "COSINE"
 
@@ -47,7 +48,7 @@ def insert(client, text, file_path, collection_name):
     """Insert the embeddings gotten from text chunks with the correspond text and file path"""
     data = []
     chunks = to_chunks(text)
-    embeddings = ollama_embed_response("llama3.2", chunks)
+    embeddings = ollama_embed_response(EMBEDDING_MODEL, chunks)
     for chunk, embedding in zip(chunks, embeddings):
         data.append({"vector": embedding, "text": chunk, "file_path": file_path})
     try: 

@@ -12,8 +12,6 @@ from rag_ui.db.vectorstore import insert, get_search_results
 
 def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
-    # Callback 1: Process submission.
-    #
     # When the user clicks the button or presses Enter and there is text:
     # - Append the user's message to the conversation.
     # - Append a pending machine answer (loading==True).
@@ -27,7 +25,7 @@ def register_callbacks(app, *args):
             Output("conversation-store", "data")
         ],
         [
-            Input("speech-to-text-btn", "n_clicks"),
+            Input("enter-btn", "n_clicks"),
             Input("center-input", "n_submit")
         ],
         [
@@ -52,8 +50,6 @@ def register_callbacks(app, *args):
         return True, "", new_conversation
 
     # -------------------------------------------------------------------------------
-    # Callback 2: Update the input container's style.
-    #
     # Move the input container to the bottom if a submission has occurred.
     # -------------------------------------------------------------------------------
     @app.callback(
@@ -62,25 +58,9 @@ def register_callbacks(app, *args):
     )
     def update_container_style(submitted):
         from rag_ui.ui.layout import bottom_style, center_style
-        return bottom_style if submitted else center_style
+        return bottom_style if submitted else center_style  
 
     # -------------------------------------------------------------------------------
-    # Callback 3: Update the button's icon based on input field content.
-    #
-    # Display an up arrow when there is text; otherwise, display a microphone.
-    # -------------------------------------------------------------------------------
-    @app.callback(
-        Output("button-icon", "className"),
-        Input("center-input", "value")
-    )
-    def update_icon(value):
-        if value and value.strip():
-            return "fas fa-arrow-up"  
-        return "fas fa-microphone"    
-
-    # -------------------------------------------------------------------------------
-    # Callback 4: Update the chat container with the conversation history.
-    #
     # Render user messages right-aligned and machine messages left-aligned.
     # For machine messages, if the answer is pending (loading) display a loading animation.
     # -------------------------------------------------------------------------------
@@ -127,8 +107,6 @@ def register_callbacks(app, *args):
         return html.Div(messages, style={"display": "flex", "flexDirection": "column"})
 
     # -------------------------------------------------------------------------------
-    # Callback 5: Update pending machine answer by calling the ollama API.
-    #
     # On each interval:
     #   1. Look for the latest assistant message with loading=True.
     #   2. Construct the conversation in the format required by ollama_chat_response,
@@ -177,8 +155,6 @@ def register_callbacks(app, *args):
         return no_update
 
     # -------------------------------------------------------------------------------
-    # Callback 6: Reset the conversation and submission store when the New Chat button is clicked.
-    #
     # This clears the conversation and resets the submission marker.
     # -------------------------------------------------------------------------------
     @app.callback(
@@ -193,15 +169,12 @@ def register_callbacks(app, *args):
         return [], False
     
     # -------------------------------------------------------------------------------
-    # Callback 7: Upload a document.
-    #
     # Upload a document then: (In the future will parallel storing the document and 
     #                           processing the content)
     #   1. Store the document content.
     #   2. Transform the document content to chunks of text.
     #   3. Embed the chunks of text using Ollama and save the embeddings to Milvus.
     # -------------------------------------------------------------------------------
-
     @app.callback(
         Output("alert-store", "data"),
         Input("upload-doc", "contents"),
@@ -221,11 +194,8 @@ def register_callbacks(app, *args):
         return res
     
     # -------------------------------------------------------------------------------
-    # Callback 8: Alert.
-    #
     # Show to alert result from inserting data into milvus database.
     # -------------------------------------------------------------------------------
-
     @app.callback(
         Output("alert-box", "message"),
         Output("alert-box", "displayed"),
