@@ -4,6 +4,7 @@ from dash import html, no_update, Input, Output, State
 
 from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response
 from rag_ui.inference.prompt import construct_prompt
+from rag_ui.inference.whisper import whispercpp
 from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL
 from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
 from rag_ui.data.preprocessing import to_text
@@ -15,12 +16,10 @@ def register_callbacks(app, *args):
     # When the user clicks the button or presses Enter and there is text:
     # - Append the user's message to the conversation.
     # - Append a pending machine answer (loading==True).
-    # - Mark that a submission has occurred.
     # - Clear the input field.
     # -------------------------------------------------------------------------------
     @app.callback(
         [
-            Output("submission-store", "data"),
             Output("center-input", "value"),
             Output("conversation-store", "data")
         ],
@@ -31,34 +30,33 @@ def register_callbacks(app, *args):
         [
             State("center-input", "value"),
             State("conversation-store", "data"),
-            State("submission-store", "data")
         ]
     )
-    def process_submission(n_clicks, n_submit, text, conversation, submitted):
+    def process_submission(n_clicks, n_submit, text, conversation):
         if not text or not text.strip():
-            return submitted, no_update, conversation
+            return no_update, conversation
 
         new_conversation = list(conversation) if conversation else []
 
         # Append the user's message.
         new_conversation.append({"role": "user", "content": text})
-
         # Append a placeholder assistant response, marked as loading.
         new_conversation.append({"role": "assistant", "content": "", "loading": True})
 
-        # Flag that a submission has occurred and clear the input.
-        return True, "", new_conversation
+        # Clear the input.
+        return "", new_conversation
 
     # -------------------------------------------------------------------------------
-    # Move the input container to the bottom if a submission has occurred.
+    # Move the input container to the bottom if conversation has children.
     # -------------------------------------------------------------------------------
     @app.callback(
         Output("input-container", "style"),
-        Input("submission-store", "data")
+        Input("conversation-store", "data"),
+        prevent_initial_call=True
     )
-    def update_container_style(submitted):
+    def update_container_style(conversation):
         from rag_ui.ui.layout import bottom_style, center_style
-        return bottom_style if submitted else center_style  
+        return bottom_style if len(conversation) > 0 else center_style  
 
     # -------------------------------------------------------------------------------
     # Render user messages right-aligned and machine messages left-aligned.
@@ -155,18 +153,15 @@ def register_callbacks(app, *args):
         return no_update
 
     # -------------------------------------------------------------------------------
-    # This clears the conversation and resets the submission marker.
+    # This clears the conversation.
     # -------------------------------------------------------------------------------
     @app.callback(
-        [
-            Output("conversation-store", "data", allow_duplicate=True),
-            Output("submission-store", "data", allow_duplicate=True)
-        ],
+        Output("conversation-store", "data", allow_duplicate=True),
         Input("new-chat-btn", "n_clicks"),
         prevent_initial_call=True
     )
     def new_chat(n_clicks):
-        return [], False
+        return []
     
     # -------------------------------------------------------------------------------
     # Upload a document then: (In the future will parallel storing the document and 
@@ -204,3 +199,43 @@ def register_callbacks(app, *args):
     )
     def show_alert(message):
         return message, True
+    
+    # -------------------------------------------------------------------------------
+    # Transcribe audio recorded and add to conversation store.
+    # -------------------------------------------------------------------------------
+    @app.callback(
+        Output("conversation-store", "data", allow_duplicate=True),
+        Input("recording-store", "data"),
+        State("conversation-store", "data"),
+        prevent_initial_call=True
+    )
+    def add_transcribed(recording_state, conversation):
+        if not recording_state:
+            transcribed = whispercpp()
+            if not transcribed or not transcribed.strip():
+                return conversation
+            new_conversation = list(conversation) if conversation else []
+            # Append the user's message.
+            new_conversation.append({"role": "user", "content": transcribed})
+            # Append a placeholder assistant response, marked as loading.
+            new_conversation.append({"role": "assistant", "content": "", "loading": True})
+
+            return new_conversation
+        else:
+            return no_update
+        
+    # -------------------------------------------------------------------------------
+    # Change recording icon.
+    # -------------------------------------------------------------------------------
+    @app.callback(
+        Output("record-icon", "className"),
+        Input("record-btn", "n_clicks"),
+        State("recording-store", "data"),
+        prevent_initial_call=True
+    )
+    def update_record_icon(n_clicks, recording_state):
+        if not recording_state:
+            return "fas fa-circle"
+        else:
+            return "fas fa-microphone"
+    

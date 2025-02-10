@@ -96,8 +96,6 @@ layout = html.Div(
         ),
         # ----------------------------------------------------------
         
-        # Store to mark that at least one submission has occurred.
-        dcc.Store(id="submission-store", data=False),
         # Store for the conversation history; initially an empty list.
         dcc.Store(id="conversation-store", data=[]),
         # Store for alerts
