@@ -1,47 +1,83 @@
-from dash import html, dcc
+from dash import Dash, html, dcc
 
-# Define two style dictionaries for the input container.
-center_style = {
+# Base style shared by both center and bottom input containers.
+base_input_style = {
     "position": "absolute",
+    "left": "50%",
+    "width": "50%",
+    "maxWidth": "600px",
+    "display": "flex",
+    "alignItems": "center",
+    "background": "#212121",
+    "borderRadius": "25px",
+    "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
+    "overflow": "hidden",
+    "padding": "15px",
+}
+
+# For center placement, add vertical centering properties.
+center_style = base_input_style.copy()
+center_style.update({
     "top": "50%",
-    "left": "50%",
     "transform": "translate(-50%, -50%)",
-    "display": "flex",
-    "alignItems": "center",
-    "width": "50%",
-    "maxWidth": "600px",
-    "background": "#fff",
-    "borderRadius": "25px",
-    "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
-    "overflow": "hidden",
-}
+    "flexDirection": "column",
+})
 
-bottom_style = {
-    "position": "absolute",
-    "left": "50%",
+# For bottom placement, override with bottom properties.
+bottom_style = base_input_style.copy()
+bottom_style.update({
     "bottom": "20px",
-    "transform": "translate(-50%, 0)",
-    "display": "flex",
-    "alignItems": "center",
-    "width": "50%",
-    "maxWidth": "600px",
-    "background": "#fff",
-    "borderRadius": "25px",
-    "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
-    "overflow": "hidden",
-}
+    "transform": "translateX(-50%)",
+    "flexDirection": "row",
+})
+
+# Define the common input row (the text input plus icon buttons).
+input_row = html.Div(
+    style={"display": "flex", "width": "100%"},
+    children=[
+        dcc.Input(
+            id="center-input",
+            type="text",
+            placeholder="Type your message here...",
+            style={
+                "flex": "1",
+                "background": "#303030",
+                "border": "none",
+                "padding": "15px",
+                "fontSize": "16px",
+                "outline": "none",
+                "color": "#fff",
+                "boxShadow": "none",
+                "-webkit-appearance": "none",
+                "-moz-appearance": "none",
+                "appearance": "none"
+            }
+        ),
+        html.Button(
+            id="record-btn",
+            n_clicks=0,
+            className="icon-button",
+            children=html.I(className="fas fa-microphone")
+        ),
+        html.Button(
+            id="enter-btn",
+            n_clicks=0,
+            className="icon-button",
+            children=html.I(className="fas fa-arrow-up")
+        )
+    ]
+)
 
 # The layout includes:
-# - A top widget bar with a "New Chat" button,
-# - Two hidden Stores (one for submission state and one for conversation history),
-# - A hidden Interval component (to update pending machine answers),
-# - The chat container, and
-# - The input container.
+# - A top widget bar with icon buttons,
+# - Hidden dcc.Stores for conversation, alerts, and recording state,
+# - A chat container, and
+# - An input container (with a header, text input, and icon buttons).
 layout = html.Div(
     style={
         "height": "100vh",
         "width": "100vw",
-        "backgroundColor": "#f0f0f0",
+        "backgroundColor": "#212121",
         "position": "relative",
     },
     children=[
@@ -54,119 +90,80 @@ layout = html.Div(
                 "left": "0",
                 "width": "100%",
                 "height": "60px",
-                "backgroundColor": "#007BFF",
+                "backgroundColor": "#212121",
                 "display": "flex",
                 "alignItems": "center",
                 "padding": "0 20px",
                 "color": "#fff",
-                "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
                 "zIndex": "1000"
             },
             children=[
+                # New chat button
                 html.Button(
-                    "New Chat",
+                    html.I(className="fas fa-plus"),
                     id="new-chat-btn",
-                    style={
-                        "background": "#fff",
-                        "color": "#007BFF",
-                        "border": "none",
-                        "padding": "10px 15px",
-                        "borderRadius": "5px",
-                        "cursor": "pointer",
-                        "fontWeight": "bold"
-                    }
+                    className="icon-button",
+                    style={"marginRight": "10px", "background": "#212121"}
                 ),
+                # Upload document button
                 html.Div([
                     dcc.Upload(
                         id="upload-doc",
-                        children=html.Button("Upload Document", id="upload-doc-btn", style={
-                        "background": "#fff",
-                        "color": "#007BFF",
-                        "border": "none",
-                        "padding": "10px 15px",
-                        "borderRadius": "5px",
-                        "cursor": "pointer",
-                        "marginLeft": "20px",
-                        "fontWeight": "bold"
-                    }),
+                        children=html.Button(
+                            html.I(className="fas fa-upload"),
+                            id="upload-doc-btn",
+                            className="icon-button",
+                            style={"marginLeft": "10px", "background": "#212121"}
+                        ),
                         multiple=False
                     )
                 ])
             ]
         ),
         # ----------------------------------------------------------
-        
-        # Store for the conversation history; initially an empty list.
+        # Stores for conversation history, alerts, and recording state
         dcc.Store(id="conversation-store", data=[]),
-        # Store for alerts
         dcc.Store(id="alert-store", data=""),
-        # Alert box
         dcc.ConfirmDialog(id="alert-box"),
-        # Recording state
         dcc.Store(id="recording-store", data=False),
-        
+
         # Chat container (positioned below the widget bar).
         html.Div(
             id="chat-container",
             style={
                 "position": "absolute",
-                "top": "80px",  # Positioned below the 60px high widget bar with some spacing.
+                "top": "80px",  # Positioned below the widget bar.
                 "left": "50%",
                 "transform": "translateX(-50%)",
                 "width": "90%",
                 "maxWidth": "600px",
-                "bottom": "120px",  # Leaves room for the input container at the bottom.
+                "bottom": "120px",
+                "overflowY": "auto",
+                "overflowX": "hidden",
                 "overflowY": "auto",
                 "display": "flex",
                 "flexDirection": "column",
             }
         ),
-
-        # Input container for the text field and button.
         html.Div(
             id="input-container",
             style=center_style,
             children=[
-                # Text input field.
-                dcc.Input(
-                    id="center-input",
-                    type="text",
-                    placeholder="Type your message here...",
+                html.H1(
+                    "Hello World!",
                     style={
-                        "flex": "1",
-                        "border": "none",
-                        "padding": "15px",
-                        "fontSize": "16px",
-                        "outline": "none",
+                        "margin": "0 0 10px 0",
+                        "color": "#fff",
+                        "fontSize": "36px",
+                        "textAlign": "center",
+                        "width": "100%",
+                        "borderRadius": "10px"
                     }
                 ),
-                html.Button(
-                    id="record-btn",
-                    n_clicks=0,
-                    style={
-                        "background": "#007BFF",
-                        "border": "none",
-                        "padding": "15px",
-                        "color": "#fff",
-                        "cursor": "pointer",
-                        "fontSize": "16px",
-                    },
-                    children=html.I(id="record-icon", className="fas fa-microphone")
-                ),
-                html.Button(
-                    id="enter-btn",
-                    n_clicks=0,
-                    style={
-                        "background": "#007BFF",
-                        "border": "none",
-                        "padding": "15px",
-                        "color": "#fff",
-                        "cursor": "pointer",
-                        "fontSize": "16px",
-                    },
-                    children=html.I(id="enter-icon", className="fas fa-arrow-up")
-                )
+                input_row
             ]
         )
     ]
 )
+
+

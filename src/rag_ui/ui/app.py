@@ -15,8 +15,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 milvus_client = init_milvus_client()
 create_collection(milvus_client, "documents", EMBEDDING_DIM)
 
-# Override the default index to remove margins/padding, hide overflow,
-# and include extra CSS for the loading animation.
+# Update the index_string to include the CSS for the icon buttons and other global styles.
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -33,6 +32,7 @@ app.index_string = '''
                 overflow: hidden;
                 width: 100%;
                 height: 100%;
+                font-family: Arial, sans-serif;
             }
             /* Loading dots animation for machine “typing” indicator */
             .loading-dots {
@@ -60,6 +60,22 @@ app.index_string = '''
                 } 40% {
                     transform: scale(1);
                 }
+            }
+            /* Icon button styles */
+            .icon-button {
+                background: #424242;
+                border: none;
+                padding: 10px;
+                cursor: pointer;
+                font-size: 18px;
+                color: #fff;
+                transition: background-color 0.3s ease;
+            }
+            .icon-button:hover {
+                background: #616161;
+            }
+            *, *:before, *:after {
+                box-sizing: border-box;
             }
         </style>
     </head>

@@ -7,6 +7,7 @@ from rag_ui.inference.prompt import construct_prompt
 from rag_ui.inference.whisper import whispercpp
 from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL
 from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
+from rag_ui.ui.layout import bottom_style, center_style, input_row
 from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
 
@@ -21,7 +22,7 @@ def register_callbacks(app, *args):
     @app.callback(
         [
             Output("center-input", "value"),
-            Output("conversation-store", "data")
+            Output("conversation-store", "data", allow_duplicate=True)
         ],
         [
             Input("enter-btn", "n_clicks"),
@@ -30,7 +31,8 @@ def register_callbacks(app, *args):
         [
             State("center-input", "value"),
             State("conversation-store", "data"),
-        ]
+        ],
+        prevent_initial_call=True
     )
     def process_submission(n_clicks, n_submit, text, conversation):
         if not text or not text.strip():
@@ -51,12 +53,32 @@ def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
     @app.callback(
         Output("input-container", "style"),
-        Input("conversation-store", "data"),
-        prevent_initial_call=True
+        Output("input-container", "children"),
+        Input("conversation-store", "data")
     )
     def update_container_style(conversation):
-        from rag_ui.ui.layout import bottom_style, center_style
-        return bottom_style if len(conversation) > 0 else center_style  
+        if len(conversation) > 0:
+            return (
+                bottom_style,
+                [input_row]
+            )
+        else:
+            return (
+                center_style,
+                [
+                    html.H1(
+                        "Hello World!",
+                        style={
+                            "margin": "0 0 20px 0",
+                            "color": "#fff",
+                            "fontSize": "36px",
+                            "textAlign": "center",
+                            "width": "100%"
+                        }
+                    ),
+                    input_row
+                ]
+            )
 
     # -------------------------------------------------------------------------------
     # Render user messages right-aligned and machine messages left-aligned.
@@ -84,7 +106,9 @@ def register_callbacks(app, *args):
                 style.update({
                     "textAlign": "right",
                     "background": "#e0e0e0",
-                    "alignSelf": "flex-end"
+                    "alignSelf": "flex-end",
+                    "background": "#4d4d4d",
+                    "color": "#fff", 
                 })
                 content = msg["content"]
             elif msg["role"] == "assistant":
@@ -92,7 +116,13 @@ def register_callbacks(app, *args):
                 style.update({
                     "textAlign": "left",
                     "background": "#d0f0d0",
-                    "alignSelf": "flex-start"
+                    "alignSelf": "flex-start",
+                    "background": "#212121",
+                    "color": "#fff",
+                    "lineHeight": "1.6",
+                    "maxWidth": "100%",
+                    "width": "100%",
+                    "margin": "10px 0"  
                 })
                 if msg.get("loading"):
                     content = html.Div(
@@ -204,13 +234,12 @@ def register_callbacks(app, *args):
     # Transcribe audio recorded and add to conversation store.
     # -------------------------------------------------------------------------------
     @app.callback(
-        Output("conversation-store", "data", allow_duplicate=True),
+        Output("conversation-store", "data"),
         Input("recording-store", "data"),
         State("conversation-store", "data"),
-        prevent_initial_call=True
     )
     def add_transcribed(recording_state, conversation):
-        if not recording_state:
+        if recording_state:
             transcribed = whispercpp()
             if not transcribed or not transcribed.strip():
                 return conversation
@@ -228,14 +257,14 @@ def register_callbacks(app, *args):
     # Change recording icon.
     # -------------------------------------------------------------------------------
     @app.callback(
-        Output("record-icon", "className"),
+        Output("record-btn", "children"),
         Input("record-btn", "n_clicks"),
         State("recording-store", "data"),
         prevent_initial_call=True
     )
     def update_record_icon(n_clicks, recording_state):
         if not recording_state:
-            return "fas fa-circle"
+            return html.I(className="fas fa-circle")
         else:
-            return "fas fa-microphone"
+            return html.I(className="fas fa-microphone")
     
