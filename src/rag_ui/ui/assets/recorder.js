@@ -7,6 +7,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
         toggleRecording: function(n_clicks, currentState) {
             let newState = !currentState;
             console.log("Recording state is now:", newState);
+            console.log("n_clicks here:", n_clicks);
             
             if (newState) {
                 navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {

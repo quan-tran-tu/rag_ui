@@ -1,16 +1,19 @@
 import base64
 
-from dash import html, no_update, Input, Output, State
+import requests
+from dash import html, no_update, Input, Output, State, clientside_callback, ClientsideFunction
 
 from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response
 from rag_ui.inference.prompt import construct_prompt
 from rag_ui.inference.whisper import whispercpp
-from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL
+from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL, WHISPER_NGROK_URL
 from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
-from rag_ui.ui.layout import bottom_style, center_style, input_row
+from rag_ui.ui.layout import bottom_style, center_style
 from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
 
+
+WHISPER_URL = WHISPER_NGROK_URL + "/transcribe"
 
 def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
@@ -22,7 +25,7 @@ def register_callbacks(app, *args):
     @app.callback(
         [
             Output("center-input", "value"),
-            Output("conversation-store", "data", allow_duplicate=True)
+            Output("conversation-store", "data")
         ],
         [
             Input("enter-btn", "n_clicks"),
@@ -32,7 +35,6 @@ def register_callbacks(app, *args):
             State("center-input", "value"),
             State("conversation-store", "data"),
         ],
-        prevent_initial_call=True
     )
     def process_submission(n_clicks, n_submit, text, conversation):
         if not text or not text.strip():
@@ -52,33 +54,14 @@ def register_callbacks(app, *args):
     # Move the input container to the bottom if conversation has children.
     # -------------------------------------------------------------------------------
     @app.callback(
-        Output("input-container", "style"),
-        Output("input-container", "children"),
+        Output("center-container", "style"),
         Input("conversation-store", "data")
     )
     def update_container_style(conversation):
         if len(conversation) > 0:
-            return (
-                bottom_style,
-                [input_row]
-            )
+            return bottom_style
         else:
-            return (
-                center_style,
-                [
-                    html.H1(
-                        "Hello World!",
-                        style={
-                            "margin": "0 0 20px 0",
-                            "color": "#fff",
-                            "fontSize": "36px",
-                            "textAlign": "center",
-                            "width": "100%"
-                        }
-                    ),
-                    input_row
-                ]
-            )
+            return center_style
 
     # -------------------------------------------------------------------------------
     # Render user messages right-aligned and machine messages left-aligned.
@@ -234,37 +217,41 @@ def register_callbacks(app, *args):
     # Transcribe audio recorded and add to conversation store.
     # -------------------------------------------------------------------------------
     @app.callback(
-        Output("conversation-store", "data"),
-        Input("recording-store", "data"),
+        Output("conversation-store", "data", allow_duplicate=True),
+        Output("record-icon", "className"),
+        Input("record-btn", "n_clicks"),
+        State("recording-store", "data"),
         State("conversation-store", "data"),
+        prevent_initial_call=True
     )
-    def add_transcribed(recording_state, conversation):
+    def add_transcribed(n_clicks, recording_state, conversation):
         if recording_state:
-            transcribed = whispercpp()
+            filepath = "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"
+            with open(filepath, "rb") as f:
+                files = {"file": f}
+                headers = {"accept": "application/json"}
+                response = requests.post(WHISPER_URL, files=files, headers=headers)
+                transcribed = response.json()['transcribe']
             if not transcribed or not transcribed.strip():
-                return conversation
+                return no_update, "fas fa-microphone"
             new_conversation = list(conversation) if conversation else []
             # Append the user's message.
             new_conversation.append({"role": "user", "content": transcribed})
             # Append a placeholder assistant response, marked as loading.
             new_conversation.append({"role": "assistant", "content": "", "loading": True})
 
-            return new_conversation
+            return new_conversation, "fas fa-microphone"
         else:
-            return no_update
+            return no_update, "fas fa-circle"
         
-    # -------------------------------------------------------------------------------
-    # Change recording icon.
-    # -------------------------------------------------------------------------------
-    @app.callback(
-        Output("record-btn", "children"),
+    clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggleRecording'
+        ),
+        Output("recording-store", "data"),
         Input("record-btn", "n_clicks"),
         State("recording-store", "data"),
         prevent_initial_call=True
     )
-    def update_record_icon(n_clicks, recording_state):
-        if not recording_state:
-            return html.I(className="fas fa-circle")
-        else:
-            return html.I(className="fas fa-microphone")
     

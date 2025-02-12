@@ -31,43 +31,6 @@ bottom_style.update({
     "flexDirection": "row",
 })
 
-# Define the common input row (the text input plus icon buttons).
-input_row = html.Div(
-    style={"display": "flex", "width": "100%"},
-    children=[
-        dcc.Input(
-            id="center-input",
-            type="text",
-            placeholder="Type your message here...",
-            style={
-                "flex": "1",
-                "background": "#303030",
-                "border": "none",
-                "padding": "15px",
-                "fontSize": "16px",
-                "outline": "none",
-                "color": "#fff",
-                "boxShadow": "none",
-                "-webkit-appearance": "none",
-                "-moz-appearance": "none",
-                "appearance": "none"
-            }
-        ),
-        html.Button(
-            id="record-btn",
-            n_clicks=0,
-            className="icon-button",
-            children=html.I(className="fas fa-microphone")
-        ),
-        html.Button(
-            id="enter-btn",
-            n_clicks=0,
-            className="icon-button",
-            children=html.I(className="fas fa-arrow-up")
-        )
-    ]
-)
-
 # The layout includes:
 # - A top widget bar with icon buttons,
 # - Hidden dcc.Stores for conversation, alerts, and recording state,
@@ -146,7 +109,7 @@ layout = html.Div(
             }
         ),
         html.Div(
-            id="input-container",
+            id="center-container",
             style=center_style,
             children=[
                 html.H1(
@@ -160,7 +123,79 @@ layout = html.Div(
                         "borderRadius": "10px"
                     }
                 ),
-                input_row
+                html.Div(
+                    style={
+                        "display": "flex", 
+                        "width": "100%", 
+                        "flexDirection": "column",
+                        "borderRadius": "8px",        # Add rounded corners
+                        "overflow": "hidden" 
+                    },
+                    children=[
+                        dcc.Input(
+                            id="center-input",
+                            type="text",
+                            placeholder="Type your message here...",
+                            style={
+                                "flex": "1",
+                                "background": "#303030",
+                                "border": "none",
+                                "padding": "15px",
+                                "fontSize": "16px",
+                                "outline": "none",
+                                "color": "#fff",
+                                "boxShadow": "none",
+                                "-webkit-appearance": "none",
+                                "-moz-appearance": "none",
+                                "appearance": "none"
+                            }
+                        ),
+                        html.Div(
+                            id="under-input",
+                            style={
+                                "width": "100%",
+                                "background": "#303030",  # Match the text input background
+                                "display": "flex",
+                                "justifyContent": "flex-end",  # Align buttons to the right
+                                "padding": "10px"
+                            },
+                            children=[
+                                html.Button(
+                                    html.I(id="record-icon", className="fas fa-microphone"),
+                                    id="record-btn",
+                                    n_clicks=0,
+                                    style={
+                                        "borderRadius": "50%",         # Round button
+                                        "background": "#EEEAEA",            # White background
+                                        "border": "none",
+                                        "width": "40px",
+                                        "height": "40px",
+                                        "display": "flex",
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                        "marginLeft": "5px"
+                                    }
+                                ),
+                                html.Button(
+                                    html.I(className="fas fa-arrow-up"),
+                                    id="enter-btn",
+                                    n_clicks=0,
+                                    style={
+                                        "borderRadius": "50%",         # Round button
+                                        "background": "#EEEAEA",            # White background
+                                        "border": "none",
+                                        "width": "40px",
+                                        "height": "40px",
+                                        "display": "flex",
+                                        "alignItems": "center",
+                                        "justifyContent": "center",
+                                        "marginLeft": "5px"
+                                    }
+                                )
+                            ]
+                        )
+                    ]
+                )
             ]
         )
     ]

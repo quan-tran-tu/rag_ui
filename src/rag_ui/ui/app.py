@@ -1,6 +1,5 @@
 from flask import request
 import dash
-from dash import Output, Input, State, clientside_callback, ClientsideFunction
 import ffmpeg
 
 from rag_ui.db.vectorstore import init_milvus_client, create_collection
@@ -117,17 +116,6 @@ def save_audio():
         return "Audio saved successfully", 200
     except ffmpeg.Error as e:
         print(f"Error ffmpeg conversion: {e}")
-
-clientside_callback(
-    ClientsideFunction(
-        namespace='clientside',
-        function_name='toggleRecording'
-    ),
-    Output("recording-store", "data"),
-    Input("record-btn", "n_clicks"),
-    State("recording-store", "data"),
-    prevent_initial_call=True
-)
 
 
 if __name__ == '__main__':

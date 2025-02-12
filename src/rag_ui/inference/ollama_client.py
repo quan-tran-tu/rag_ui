@@ -1,12 +1,16 @@
 from ollama import Client
 
+from rag_ui.core.config import OLLAMA_NGROK_URL
+
+OLLAMA_HOST = OLLAMA_NGROK_URL
+
 def ollama_chat_response(
         model: str, 
         messages: list[dict], 
         stream=False
     ):
 
-    client = Client()
+    client = Client(host=OLLAMA_HOST)
     # if stream:
     #     for part in client.chat(model, messages, stream=stream):
     #         yield part['message']['content']
@@ -19,7 +23,7 @@ def ollama_embed_response(
         input: list[str], 
     ) -> list[list[float]]:
 
-    client = Client()
+    client = Client(host=OLLAMA_HOST)
     response = client.embed(model, input)
     return response['embeddings']
 
