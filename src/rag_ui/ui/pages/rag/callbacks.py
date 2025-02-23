@@ -1,28 +1,29 @@
 import base64
 
 import requests
-from dash import html, no_update, Input, Output, State, clientside_callback, ClientsideFunction
+
+from dash import html, no_update, Input, Output, State, clientside_callback, ClientsideFunction, callback
 
 from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response
 from rag_ui.inference.prompt import construct_prompt
-from rag_ui.inference.whisper import whispercpp
 from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL, WHISPER_NGROK_URL
 from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
-from rag_ui.ui.layout import bottom_style, center_style
+from rag_ui.ui.pages.rag.layout import bottom_style, center_style
 from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
+from rag_ui.core.modules.speech_enhance import kalman_filter_audio
 
-
+UPLOAD_FOLDER = "./src/rag_ui/data/documents/"
 WHISPER_URL = WHISPER_NGROK_URL + "/transcribe"
 
-def register_callbacks(app, *args):
+def register_callbacks(*args):
     # -------------------------------------------------------------------------------
     # When the user clicks the button or presses Enter and there is text:
     # - Append the user's message to the conversation.
     # - Append a pending machine answer (loading==True).
     # - Clear the input field.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         [
             Output("center-input", "value"),
             Output("conversation-store", "data")
@@ -53,7 +54,7 @@ def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
     # Move the input container to the bottom if conversation has children.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("center-container", "style"),
         Input("conversation-store", "data")
     )
@@ -67,7 +68,7 @@ def register_callbacks(app, *args):
     # Render user messages right-aligned and machine messages left-aligned.
     # For machine messages, if the answer is pending (loading) display a loading animation.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("chat-container", "children"),
         Input("conversation-store", "data")
     )
@@ -125,7 +126,7 @@ def register_callbacks(app, *args):
     #   3. Call ollama_chat_response to get the model's answer.
     #   4. Update that assistant message with the answer and set loading=False.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("conversation-store", "data", allow_duplicate=True),
         Input("conversation-store", "data"),
         prevent_initial_call=True
@@ -168,7 +169,7 @@ def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
     # This clears the conversation.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("conversation-store", "data", allow_duplicate=True),
         Input("new-chat-btn", "n_clicks"),
         prevent_initial_call=True
@@ -183,7 +184,7 @@ def register_callbacks(app, *args):
     #   2. Transform the document content to chunks of text.
     #   3. Embed the chunks of text using Ollama and save the embeddings to Milvus.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("alert-store", "data"),
         Input("upload-doc", "contents"),
         State("upload-doc", "filename"),
@@ -195,7 +196,7 @@ def register_callbacks(app, *args):
         _, content_string = contents.split(",")
         file_bytes = base64.b64decode(content_string)
 
-        file_path = save_uploaded_file(file_bytes, filename)
+        file_path = save_uploaded_file(file_bytes, filename, UPLOAD_FOLDER)
         text = to_text(file_path)
 
         res = insert(args[0], text, file_path, collection_name="documents")
@@ -204,7 +205,7 @@ def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
     # Show to alert result from inserting data into milvus database.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("alert-box", "message"),
         Output("alert-box", "displayed"),
         Input("alert-store", "data"),
@@ -216,7 +217,7 @@ def register_callbacks(app, *args):
     # -------------------------------------------------------------------------------
     # Transcribe audio recorded and add to conversation store.
     # -------------------------------------------------------------------------------
-    @app.callback(
+    @callback(
         Output("conversation-store", "data", allow_duplicate=True),
         Output("record-icon", "className"),
         Input("record-btn", "n_clicks"),
@@ -227,7 +228,14 @@ def register_callbacks(app, *args):
     def add_transcribed(n_clicks, recording_state, conversation):
         if recording_state:
             filepath = "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"
-            with open(filepath, "rb") as f:
+            kalman_path1 = "/home/tuquan/rag_ui/src/rag_ui/data/audio/kalman.wav"
+            kalman_path2 = "/home/tuquan/rag_ui/src/rag_ui/data/audio/kalman2.wav"
+
+            # Apply kalman 2 times
+            kalman_filter_audio(filepath, kalman_path1)
+            kalman_filter_audio(filepath, kalman_path2)
+            
+            with open(kalman_path2, "rb") as f:
                 files = {"file": f}
                 headers = {"accept": "application/json"}
                 response = requests.post(WHISPER_URL, files=files, headers=headers)
@@ -244,6 +252,9 @@ def register_callbacks(app, *args):
         else:
             return no_update, "fas fa-circle"
         
+    # -------------------------------------------------------------------------------
+    # Client side recording callback
+    # -------------------------------------------------------------------------------
     clientside_callback(
         ClientsideFunction(
             namespace='clientside',

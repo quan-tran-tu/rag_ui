@@ -1,101 +1,15 @@
-from flask import request
 import dash
 import ffmpeg
-
-from rag_ui.db.vectorstore import init_milvus_client, create_collection
-from rag_ui.core.config import EMBEDDING_DIM
+from flask import request
+from dash import html
 
 # Include Font Awesome for icons.
 external_stylesheets = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 ]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, use_pages=True)
 
-milvus_client = init_milvus_client()
-create_collection(milvus_client, "documents", EMBEDDING_DIM)
-
-# Update the index_string to include the CSS for the icon buttons and other global styles.
-app.index_string = '''
-<!DOCTYPE html>
-<html>
-    <head>
-        {%metas%}
-        <meta charset="utf-8">
-        <title>Chat Mock App</title>
-        {%favicon%}
-        {%css%}
-        <style>
-            html, body {
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-                width: 100%;
-                height: 100%;
-                font-family: Arial, sans-serif;
-            }
-            /* Loading dots animation for machine “typing” indicator */
-            .loading-dots {
-                display: flex;
-                align-items: center;
-            }
-            .loading-dots span {
-                display: block;
-                width: 8px;
-                height: 8px;
-                margin: 0 2px;
-                background: #555;
-                border-radius: 50%;
-                animation: loading 1.4s infinite ease-in-out both;
-            }
-            .loading-dots span:nth-child(1) {
-                animation-delay: -0.32s;
-            }
-            .loading-dots span:nth-child(2) {
-                animation-delay: -0.16s;
-            }
-            @keyframes loading {
-                0%, 80%, 100% {
-                    transform: scale(0);
-                } 40% {
-                    transform: scale(1);
-                }
-            }
-            /* Icon button styles */
-            .icon-button {
-                background: #424242;
-                border: none;
-                padding: 10px;
-                cursor: pointer;
-                font-size: 18px;
-                color: #fff;
-                transition: background-color 0.3s ease;
-            }
-            .icon-button:hover {
-                background: #616161;
-            }
-            *, *:before, *:after {
-                box-sizing: border-box;
-            }
-        </style>
-    </head>
-    <body>
-        {%app_entry%}
-        <footer>
-            {%config%}
-            {%scripts%}
-            {%renderer%}
-        </footer>
-    </body>
-</html>
-'''
-
-# Import the layout defined in layout.py
-from rag_ui.ui.layout import layout
-app.layout = layout
-
-# Register all callbacks with the app.
-from rag_ui.ui.callbacks import register_callbacks
-register_callbacks(app, milvus_client)
+app.layout = dash.page_container
 
 @app.server.route("/save_audio", methods=["POST"])
 def save_audio():
@@ -119,4 +33,4 @@ def save_audio():
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run(debug=False)

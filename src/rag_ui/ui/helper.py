@@ -1,10 +1,9 @@
 import os
 
-UPLOAD_FOLDER = "./src/rag_ui/data/documents/"
 
-def save_uploaded_file(file_content, filename):
+def save_uploaded_file(file_content, filename, folder):
     """Saves uploaded file to the specified directory."""
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file_path = os.path.join(folder, filename)
     with open(file_path, "wb") as f:
         f.write(file_content)
     return file_path

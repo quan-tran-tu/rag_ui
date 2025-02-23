@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc
+from dash import html, dcc
 
 # Base style shared by both center and bottom input containers.
 base_input_style = {
@@ -31,11 +31,6 @@ bottom_style.update({
     "flexDirection": "row",
 })
 
-# The layout includes:
-# - A top widget bar with icon buttons,
-# - Hidden dcc.Stores for conversation, alerts, and recording state,
-# - A chat container, and
-# - An input container (with a header, text input, and icon buttons).
 layout = html.Div(
     style={
         "height": "100vh",
@@ -66,7 +61,7 @@ layout = html.Div(
                     html.I(className="fas fa-plus"),
                     id="new-chat-btn",
                     className="icon-button",
-                    style={"marginRight": "10px", "background": "#212121"}
+                    style={"marginRight": "10px"}
                 ),
                 # Upload document button
                 html.Div([
@@ -76,11 +71,11 @@ layout = html.Div(
                             html.I(className="fas fa-upload"),
                             id="upload-doc-btn",
                             className="icon-button",
-                            style={"marginLeft": "10px", "background": "#212121"}
+                            style={"marginLeft": "10px"}
                         ),
                         multiple=False
                     )
-                ])
+                ]),
             ]
         ),
         # ----------------------------------------------------------
@@ -95,7 +90,7 @@ layout = html.Div(
             id="chat-container",
             style={
                 "position": "absolute",
-                "top": "80px",  # Positioned below the widget bar.
+                "top": "80px",
                 "left": "50%",
                 "transform": "translateX(-50%)",
                 "width": "90%",
@@ -128,7 +123,7 @@ layout = html.Div(
                         "display": "flex", 
                         "width": "100%", 
                         "flexDirection": "column",
-                        "borderRadius": "8px",        # Add rounded corners
+                        "borderRadius": "8px",
                         "overflow": "hidden" 
                     },
                     children=[
@@ -154,7 +149,7 @@ layout = html.Div(
                             id="under-input",
                             style={
                                 "width": "100%",
-                                "background": "#303030",  # Match the text input background
+                                "background": "#303030",
                                 "display": "flex",
                                 "justifyContent": "flex-end",  # Align buttons to the right
                                 "padding": "10px"
@@ -165,8 +160,8 @@ layout = html.Div(
                                     id="record-btn",
                                     n_clicks=0,
                                     style={
-                                        "borderRadius": "50%",         # Round button
-                                        "background": "#EEEAEA",            # White background
+                                        "borderRadius": "50%",   
+                                        "background": "#EEEAEA",    
                                         "border": "none",
                                         "width": "40px",
                                         "height": "40px",
@@ -181,8 +176,8 @@ layout = html.Div(
                                     id="enter-btn",
                                     n_clicks=0,
                                     style={
-                                        "borderRadius": "50%",         # Round button
-                                        "background": "#EEEAEA",            # White background
+                                        "borderRadius": "50%",   
+                                        "background": "#EEEAEA",    
                                         "border": "none",
                                         "width": "40px",
                                         "height": "40px",
