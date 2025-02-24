@@ -95,36 +95,40 @@ layout = html.Div(
                 "transform": "translateX(-50%)",
                 "width": "90%",
                 "maxWidth": "600px",
-                "bottom": "120px",
-                "overflowY": "auto",
+                "bottom": "150px",
+                "overflowY": "scroll",
                 "overflowX": "hidden",
-                "overflowY": "auto",
                 "display": "flex",
                 "flexDirection": "column",
+                "-ms-overflow-style": "none",  # IE and Edge
+                "scrollbarWidth": "none",  # Firefox
+                "::-webkit-scrollbar": {
+                    "display": "none"  # Chrome, Safari, and newer Edge
+                },
             }
         ),
         html.Div(
             id="center-container",
             style=center_style,
             children=[
-                html.H1(
-                    "Hello World!",
-                    style={
-                        "margin": "0 0 10px 0",
-                        "color": "#fff",
-                        "fontSize": "36px",
-                        "textAlign": "center",
-                        "width": "100%",
-                        "borderRadius": "10px"
-                    }
-                ),
+                # html.H1(
+                #     "Hello World!",
+                #     style={
+                #         "margin": "0 0 10px 0",
+                #         "color": "#fff",
+                #         "fontSize": "36px",
+                #         "textAlign": "center",
+                #         "width": "100%",
+                #         "borderRadius": "10px"
+                #     }
+                # ),
                 html.Div(
                     style={
                         "display": "flex", 
                         "width": "100%", 
                         "flexDirection": "column",
                         "borderRadius": "8px",
-                        "overflow": "hidden" 
+                        "overflow": "hidden",
                     },
                     children=[
                         dcc.Input(
@@ -142,7 +146,7 @@ layout = html.Div(
                                 "boxShadow": "none",
                                 "-webkit-appearance": "none",
                                 "-moz-appearance": "none",
-                                "appearance": "none"
+                                "appearance": "none",
                             }
                         ),
                         html.Div(

@@ -9,6 +9,10 @@ layout = html.Div(
         "position": "relative",
     },
     children=[
+        # Stores
+        dcc.Store(id="raw-audio-state", data=False), # Track if uploaded raw audio or recorded audio
+        dcc.Store(id="speech-recording-store", data=False), # Track record button
+
         html.Div(
             id="speech-widget-bar",
             style={
@@ -78,11 +82,10 @@ layout = html.Div(
                                             style={"color": "#fff"},
                                             multiple=False
                                         ),
-                                        html.Audio(id="original-audio-player", controls=True,
+                                        html.Audio(id="raw-audio-player", controls=True,
                                                    style={"width": "100%", "marginTop": "10px"}),
                                     ]
                                 ),
-                                dcc.Store(id='audio-file-store'),
                                 html.Div(
                                     children=[
                                         html.Div(
@@ -140,7 +143,6 @@ layout = html.Div(
                                     children=[
                                         html.Audio(id="enhanced-audio-player", controls=True,
                                                   style={"width": "100%", "marginTop": "28px"}),
-                                        dcc.Store(id='enhanced-audio-store'),
                                     ]
                                 ),
                                 
@@ -175,7 +177,6 @@ layout = html.Div(
                                 "border": "2px solid lightgrey",
                             }
                         ),
-                        dcc.Store(id="speech-recording-store", data=False)
                     ],
                     style={
                         "display": "flex",
@@ -199,7 +200,6 @@ layout = html.Div(
                                 "overflowY": "auto"
                             }
                         ),
-                        dcc.Store(id='transcription-store')
                     ]
                 )
             ]
