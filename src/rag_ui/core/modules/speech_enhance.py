@@ -88,6 +88,10 @@ def kalman_filter_audio(input_path, output_path, Q=0.01, R=0.1):
     # Save filtered audio
     wavfile.write(output_path, sr, x_est_int16)
 
+def enhance(input_file, output_file):
+    kalman_filter_audio(input_file, "src/rag_ui/data/audio/temp.wav")
+    kalman_filter_audio("src/rag_ui/data/audio/temp.wav", output_file)
+
 if __name__ == '__main__':
     # # Read the noisy audio file (ensure it's a WAV file)
     # sr, noisy_signal = wavfile.read('src/rag_ui/data/audio/noisy_speech.wav')

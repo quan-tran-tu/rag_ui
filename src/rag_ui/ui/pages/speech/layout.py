@@ -12,6 +12,9 @@ layout = html.Div(
         # Stores
         dcc.Store(id="raw-audio-state", data=False), # Track if uploaded raw audio or recorded audio
         dcc.Store(id="speech-recording-store", data=False), # Track record button
+        dcc.Store(id="enhanced-audio-state", data=False), # Track if enhanced audio
+        dcc.Store(id="transcription-results-store", data=""), # Track transcription results
+        dcc.Store(id="raw-audio-path", data=""), # Track raw audio path
 
         html.Div(
             id="speech-widget-bar",

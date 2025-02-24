@@ -14,7 +14,7 @@ app.layout = dash.page_container
 @app.server.route("/save_audio", methods=["POST"])
 def save_audio():
     if "audio" not in request.files:
-        return "No file received", 400
+        return {"message": "No file received", "code": 400, "path": ""}
     
     audio_file = request.files["audio"]
     save_path = "./src/rag_ui/data/audio/recorded_audio.webm"
@@ -27,7 +27,7 @@ def save_audio():
                 .output(wav_path, acodec="pcm_s16le", ar="16000", ac=1)
                 .run(overwrite_output=True)
         )
-        return "Audio saved successfully", 200
+        return {"message": "Audio saved successfully", "code": 200, "path": wav_path}
     except ffmpeg.Error as e:
         print(f"Error ffmpeg conversion: {e}")
 

@@ -10,12 +10,26 @@
 
 import subprocess
 
+import requests
+
+from rag_ui.core.config import WHISPER_NGROK_URL
+
+WHISPER_URL = WHISPER_NGROK_URL + "/transcribe"
+
 def whispercpp() -> str:
     ret = subprocess.check_output(
         ["/home/tuquan/rag_ui/whisper.cpp/build/bin/whisper-cli", "-m", "/home/tuquan/rag_ui/whisper.cpp/models/ggml-large-v3-turbo-q5_0.bin", "-nt", "true", "-l", "vi", "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"],
     )
 
     return ret.decode('utf-8')
+
+def whisper_api(filepath) -> str:
+    with open(filepath, "rb") as f:
+        files = {"file": f}
+        headers = {"accept": "application/json"}
+        response = requests.post(WHISPER_URL, files=files, headers=headers)
+        transcribed = response.json()['transcribe']
+        return transcribed
 
 if __name__ == "__main__":
     ret = subprocess.check_output(

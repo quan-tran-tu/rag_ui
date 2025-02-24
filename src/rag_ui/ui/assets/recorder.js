@@ -6,8 +6,6 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
         
         toggleRecording: function(n_clicks, currentState) {
             let newState = !currentState;
-            console.log("Recording state is now:", newState);
-            console.log("n_clicks here:", n_clicks);
             
             if (newState) {
                 navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -31,10 +29,20 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                         xhr.open('POST', '/save_audio', true);
                         xhr.onload = function() {
                             if (xhr.status === 200) {
-                                console.log('Audio file saved successfully.');
-                                // Clean up the chunks after saving
-                                dash_clientside.clientside.audioChunks = [];
-                                console.log('Audio chunks cleaned.');
+                                try {
+                                    const response = JSON.parse(xhr.responseText);
+                                    const message = response.message;
+                                    const code = response.code;
+                                    const path = response.path;
+
+                                    console.log(`Message: ${message}, Code: ${code}, Filename: ${path}`);
+                                    // Clean up the chunks after saving
+                                    dash_clientside.clientside.audioChunks = [];
+                                    console.log('Audio chunks cleaned.');
+                                }
+                                catch (error) {
+                                    console.error('Error parsing JSON response: ', error);
+                                }
                             } else {
                                 console.error('Error saving audio: ', xhr.statusText);
                             }
@@ -55,7 +63,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     dash_clientside.clientside.mediaRecorder = null;
                 }
             }
-            return newState;
+            return newState, "./src/rag_ui/data/audio/recorded_audio.wav";
         }
     }
 });

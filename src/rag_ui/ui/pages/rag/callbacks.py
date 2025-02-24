@@ -6,15 +6,15 @@ from dash import html, no_update, Input, Output, State, clientside_callback, Cli
 
 from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response
 from rag_ui.inference.prompt import construct_prompt
-from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL, WHISPER_NGROK_URL
+from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL
 from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
 from rag_ui.ui.pages.rag.layout import bottom_style, center_style
 from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
-from rag_ui.core.modules.speech_enhance import kalman_filter_audio
+from rag_ui.core.modules.speech_enhance import enhance
+from rag_ui.inference.whisper import whisper_api
 
 UPLOAD_FOLDER = "./src/rag_ui/data/documents/"
-WHISPER_URL = WHISPER_NGROK_URL + "/transcribe"
 
 def register_callbacks(*args):
     # -------------------------------------------------------------------------------
@@ -228,18 +228,12 @@ def register_callbacks(*args):
     def add_transcribed(n_clicks, recording_state, conversation):
         if recording_state:
             filepath = "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"
-            kalman_path1 = "/home/tuquan/rag_ui/src/rag_ui/data/audio/kalman.wav"
-            kalman_path2 = "/home/tuquan/rag_ui/src/rag_ui/data/audio/kalman2.wav"
+            enhanced_path = "/home/tuquan/rag_ui/src/rag_ui/data/audio/enhanced.wav"
 
-            # Apply kalman 2 times
-            kalman_filter_audio(filepath, kalman_path1)
-            kalman_filter_audio(filepath, kalman_path2)
+            enhance(filepath, enhanced_path)
             
-            with open(kalman_path2, "rb") as f:
-                files = {"file": f}
-                headers = {"accept": "application/json"}
-                response = requests.post(WHISPER_URL, files=files, headers=headers)
-                transcribed = response.json()['transcribe']
+            transcribed = whisper_api(enhanced_path)
+
             if not transcribed or not transcribed.strip():
                 return no_update, "fas fa-microphone"
             new_conversation = list(conversation) if conversation else []
