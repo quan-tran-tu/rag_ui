@@ -5,10 +5,9 @@ import requests
 
 from dash import html, no_update, Input, Output, State, clientside_callback, ClientsideFunction, callback
 
-from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response
-from rag_ui.inference.prompt import construct_prompt
-from rag_ui.core.config import LLM_MODEL, EMBEDDING_MODEL
-from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file
+from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response, ollama_product_call
+from rag_ui.core.config import config
+from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file, create_product_div
 from rag_ui.ui.pages.rag.layout import bottom_style, center_style
 from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
@@ -71,9 +70,10 @@ def register_callbacks(*args):
     # -------------------------------------------------------------------------------
     @callback(
         Output("chat-container", "children"),
-        Input("conversation-store", "data")
+        Input("conversation-store", "data"),
+        State("search-mode", "data")
     )
-    def update_chat(conversation):
+    def update_chat(conversation, search):
         print("Updated conversation:", conversation)  # Debug print.
         if not conversation:
             return []
@@ -115,7 +115,10 @@ def register_callbacks(*args):
                         className="loading-dots"
                     )
                 else:
-                    content = msg["content"]
+                    if search:
+                        content = create_product_div(msg["json_res"]) # Create a html.Div with the product info
+                    else:
+                        content = msg["content"]
             messages.append(html.Div(content, style=style))
         return html.Div(messages, style={"display": "flex", "flexDirection": "column"})
 
@@ -130,9 +133,10 @@ def register_callbacks(*args):
     @callback(
         Output("conversation-store", "data", allow_duplicate=True),
         Input("conversation-store", "data"),
+        State("search-mode", "data"),
         prevent_initial_call=True
     )
-    def update_machine_answer(conversation):
+    def update_machine_answer(conversation, search):
         if not conversation:
             return no_update
 
@@ -141,28 +145,43 @@ def register_callbacks(*args):
             # Identify the first assistant message that is loading
             if msg.get("role") == "assistant" and msg.get("loading"):
                 try:
+                    json_res = ""
                     # Get the latest user message
                     latest_user_message = get_latest_user_message(new_conversation[:i])
 
-                    embedding = ollama_embed_response(EMBEDDING_MODEL, [latest_user_message])[0]
-                    # Search for similar embeddings in the Milvus database
-                    search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
-                    retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
-                    print("retrieved text: ", retrieved)
-                    context = "\n".join([f"File: {file_path}\nRelevance Text: {text}" for file_path, text in retrieved])
-                    full_prompts = construct_prompt(context, latest_user_message)
-                    # Get the assistant's response from Ollama
-                    answer = ollama_chat_response(
-                        LLM_MODEL,
-                        full_prompts,
-                        stream=False
-                    )
+                    if not search:
+                        embedding = ollama_embed_response(config.EMBEDDING_MODEL, [latest_user_message])[0]
+                        # Search for similar embeddings in the Milvus database
+                        search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
+                        retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
+                        print("retrieved text: ", retrieved)
+                        context = "\n".join([f"File: {file_path}\nRelevance Text: {text}" for file_path, text in retrieved])
+                        # Get the assistant's response from Ollama
+                        answer = ollama_chat_response(
+                            config.LLM_MODEL,
+                            context=context,
+                            user_message=latest_user_message
+                        )
+                    else:
+                        # answer = ollama_chat_response(
+                        #     config.LLM_MODEL,
+                        #     user_message=latest_user_message,
+                        #     tool_call=True
+                        # )
+                        answer = ""
+                        json_res = ollama_product_call(
+                            config.LLM_MODEL,
+                            user_message=latest_user_message
+                        )
+
                 except Exception as e:
                     answer = f"Request failed: {str(e)}"
+
                 print("answer:", answer)  # Debug print.
                 # Update the pending assistant message with the new answer
                 new_conversation[i]["loading"] = False
                 new_conversation[i]["content"] = answer
+                new_conversation[i]["json_res"] = json_res
 
                 return new_conversation
         return no_update
@@ -264,3 +283,38 @@ clientside_callback(
     State("recording-store", "data"),
     prevent_initial_call=True
 )
+
+# -------------------------------------------------------------------------------
+# Trigger search mode
+# -------------------------------------------------------------------------------
+@callback(
+    Output("search-mode", "data"),
+    Output("search-btn", "style"),
+    Input("search-btn", "n_clicks"),
+    State("search-mode", "data"),
+    prevent_initial_call=True
+)
+def toggle_search_mode(n_clicks, search_mode):
+    if search_mode:
+        style = {
+            "display": "flex",
+            "alignItems": "center",
+            "background": "#303030",
+            "border": "1px solid white",
+            "borderRadius": "20px",
+            "padding": "5px 10px",
+            "cursor": "pointer",  
+            "color": "white", 
+        }
+    else:
+        style = {
+            "display": "flex",
+            "alignItems": "center",
+            "background": "#303030",
+            "border": "1px solid red",
+            "borderRadius": "20px",
+            "padding": "5px 10px",
+            "cursor": "pointer",  
+            "color": "red",
+        }
+    return not search_mode, style

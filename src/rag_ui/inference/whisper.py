@@ -12,9 +12,9 @@ import subprocess
 
 import requests
 
-from rag_ui.core.config import WHISPER_NGROK_URL
+from rag_ui.core.config import config
 
-WHISPER_URL = WHISPER_NGROK_URL + "/transcribe"
+WHISPER_URL = config.WHISPER_NGROK_URL + "/transcribe"
 
 def whispercpp() -> str:
     ret = subprocess.check_output(

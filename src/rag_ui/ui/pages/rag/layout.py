@@ -85,6 +85,7 @@ layout = html.Div(
         dcc.ConfirmDialog(id="alert-box"),
         dcc.Store(id="recording-store", data=False),
         dcc.Store(id="raw-path", data="./src/rag_ui/data/audio/recorded_audio.wav"),
+        dcc.Store(id="search-mode", data=False),
 
         # Chat container (positioned below the widget bar).
         html.Div(
@@ -156,44 +157,68 @@ layout = html.Div(
                                 "width": "100%",
                                 "background": "#303030",
                                 "display": "flex",
-                                "justifyContent": "flex-end",  # Align buttons to the right
+                                "justifyContent": "space-between",  # Align search to the left and buttons to the right
                                 "padding": "10px"
                             },
                             children=[
                                 html.Button(
-                                    html.I(id="record-icon", className="fas fa-microphone"),
-                                    id="record-btn",
+                                    id="search-btn",
                                     n_clicks=0,
                                     style={
-                                        "borderRadius": "50%",   
-                                        "background": "#EEEAEA",    
-                                        "border": "none",
-                                        "width": "40px",
-                                        "height": "40px",
                                         "display": "flex",
                                         "alignItems": "center",
-                                        "justifyContent": "center",
-                                        "marginLeft": "5px"
-                                    }
+                                        "background": "#303030",
+                                        "border": "1px solid white",
+                                        "borderRadius": "20px",
+                                        "padding": "5px 10px",
+                                        "cursor": "pointer",
+                                        "color": "white",
+                                    },
+                                    children=[
+                                        html.I(className="fas fa-globe", style={"marginRight": "8px"}),
+                                        html.Span("Search")
+                                    ]
                                 ),
-                                html.Button(
-                                    html.I(className="fas fa-arrow-up"),
-                                    id="enter-btn",
-                                    n_clicks=0,
-                                    style={
-                                        "borderRadius": "50%",   
-                                        "background": "#EEEAEA",    
-                                        "border": "none",
-                                        "width": "40px",
-                                        "height": "40px",
-                                        "display": "flex",
-                                        "alignItems": "center",
-                                        "justifyContent": "center",
-                                        "marginLeft": "5px"
-                                    }
+                                html.Div(
+                                    style={"display": "flex", "alignItems": "center"},
+                                    children=[
+                                        html.Button(
+                                            html.I(id="record-icon", className="fas fa-microphone"),
+                                            id="record-btn",
+                                            n_clicks=0,
+                                            style={
+                                                "borderRadius": "50%",   
+                                                "background": "#EEEAEA",    
+                                                "border": "none",
+                                                "width": "40px",
+                                                "height": "40px",
+                                                "display": "flex",
+                                                "alignItems": "center",
+                                                "justifyContent": "center",
+                                                "marginLeft": "5px"
+                                            }
+                                        ),
+                                        html.Button(
+                                            html.I(className="fas fa-arrow-up"),
+                                            id="enter-btn",
+                                            n_clicks=0,
+                                            style={
+                                                "borderRadius": "50%",   
+                                                "background": "#EEEAEA",    
+                                                "border": "none",
+                                                "width": "40px",
+                                                "height": "40px",
+                                                "display": "flex",
+                                                "alignItems": "center",
+                                                "justifyContent": "center",
+                                                "marginLeft": "5px"
+                                            }
+                                        )
+                                    ]
                                 )
                             ]
                         )
+
                     ]
                 )
             ]
