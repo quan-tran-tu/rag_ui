@@ -3,28 +3,41 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
         // Add persistent properties
         mediaRecorder: null,
         audioChunks: [],
+        isRecording: false,
         
         toggleRecording: function(n_clicks, currentState) {
-            let newState = !currentState;
+            // Only proceed if n_clicks is valid (prevents initial call issues)
+            if (!n_clicks) return [currentState, null, "fas fa-microphone"];
+            
+            // Toggle recording state
+            let newState = !this.isRecording;
+            this.isRecording = newState;
             
             if (newState) {
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                    // Store the mediaRecorder on the clientside object
-                    dash_clientside.clientside.mediaRecorder = new MediaRecorder(stream);
+                // Start recording
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    this.audioChunks = []; // Clear previous chunks
+                    this.mediaRecorder = new MediaRecorder(stream);
                     console.log("MediaRecorder initiated.");
-
-                    dash_clientside.clientside.mediaRecorder.ondataavailable = event => {
+                    
+                    this.mediaRecorder.ondataavailable = event => {
                         if (event.data.size > 0) {
-                            dash_clientside.clientside.audioChunks.push(event.data);
+                            this.audioChunks.push(event.data);
                         }
                     };
-        
-                    dash_clientside.clientside.mediaRecorder.onstop = () => {
+                    
+                    this.mediaRecorder.onstop = () => {
                         console.log("Stopping MediaRecorder.");
-                        const audioBlob = new Blob(dash_clientside.clientside.audioChunks, { type: "audio/wav" });
+                        if (this.audioChunks.length === 0) {
+                            console.log("No audio chunks to process");
+                            return;
+                        }
+                        
+                        const audioBlob = new Blob(this.audioChunks, { type: "audio/wav" });
                         let formData = new FormData();
                         formData.append("audio", audioBlob, "recorded_audio.wav");
-        
+                        
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/save_audio', true);
                         xhr.onload = function() {
@@ -34,13 +47,9 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                                     const message = response.message;
                                     const code = response.code;
                                     const path = response.path;
-
+                                    
                                     console.log(`Message: ${message}, Code: ${code}, Filename: ${path}`);
-                                    // Clean up the chunks after saving
-                                    dash_clientside.clientside.audioChunks = [];
-                                    console.log('Audio chunks cleaned.');
-                                }
-                                catch (error) {
+                                } catch (error) {
                                     console.error('Error parsing JSON response: ', error);
                                 }
                             } else {
@@ -48,22 +57,29 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                             }
                         };
                         xhr.send(formData);
-                        // Clear audioChunks again
-                        dash_clientside.clientside.audioChunks = [];
                     };
-
-                    dash_clientside.clientside.mediaRecorder.start();
-                }).catch(error => console.error("Error accessing microphone", error));
+                    
+                    this.mediaRecorder.start();
+                })
+                .catch(error => {
+                    console.error("Error accessing microphone", error);
+                    this.isRecording = false; // Reset recording state on error
+                    return [false, null, "fas fa-microphone"];
+                });
+                
+                return [true, "./src/rag_ui/data/audio/recorded_audio.wav", "fas fa-circle"];
             } else {
-                // Access the persistent mediaRecorder
-                if (dash_clientside.clientside.mediaRecorder && dash_clientside.clientside.mediaRecorder.state === 'recording') {
-                    dash_clientside.clientside.mediaRecorder.stop();
-                    const streamTracks = dash_clientside.clientside.mediaRecorder.stream.getTracks();
-                    streamTracks.forEach(track => track.stop());
-                    dash_clientside.clientside.mediaRecorder = null;
+                // Stop recording
+                if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                    this.mediaRecorder.stop();
+                    if (this.mediaRecorder.stream) {
+                        const streamTracks = this.mediaRecorder.stream.getTracks();
+                        streamTracks.forEach(track => track.stop());
+                    }
                 }
+                
+                return [false, "./src/rag_ui/data/audio/recorded_audio.wav", "fas fa-microphone"];
             }
-            return newState, "./src/rag_ui/data/audio/recorded_audio.wav";
         }
     }
 });

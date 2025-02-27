@@ -152,6 +152,7 @@ def register_callbacks():
         ),
         Output("speech-recording-store", "data"),
         Output("raw-audio-path", "data"),
+        Output("trash", "data"),
         Input("speech-record-btn", "n_clicks"),
         State("speech-recording-store", "data"),
         prevent_initial_call=True

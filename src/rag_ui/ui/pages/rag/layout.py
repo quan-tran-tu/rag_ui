@@ -84,6 +84,7 @@ layout = html.Div(
         dcc.Store(id="alert-store", data=""),
         dcc.ConfirmDialog(id="alert-box"),
         dcc.Store(id="recording-store", data=False),
+        dcc.Store(id="raw-path", data="./src/rag_ui/data/audio/recorded_audio.wav"),
 
         # Chat container (positioned below the widget bar).
         html.Div(

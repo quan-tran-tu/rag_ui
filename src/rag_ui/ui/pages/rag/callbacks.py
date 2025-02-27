@@ -1,3 +1,4 @@
+import os
 import base64
 
 import requests
@@ -214,49 +215,52 @@ def register_callbacks(*args):
     def show_alert(message):
         return message, True
     
-    # -------------------------------------------------------------------------------
-    # Transcribe audio recorded and add to conversation store.
-    # -------------------------------------------------------------------------------
-    @callback(
-        Output("conversation-store", "data", allow_duplicate=True),
-        Output("record-icon", "className"),
-        Input("record-btn", "n_clicks"),
-        State("recording-store", "data"),
-        State("conversation-store", "data"),
-        prevent_initial_call=True
-    )
-    def add_transcribed(n_clicks, recording_state, conversation):
-        if recording_state:
-            filepath = "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"
-            enhanced_path = "/home/tuquan/rag_ui/src/rag_ui/data/audio/enhanced.wav"
-
+# -------------------------------------------------------------------------------
+# Transcribe audio recorded and add to conversation store.
+# -------------------------------------------------------------------------------
+@callback(
+    Output("conversation-store", "data", allow_duplicate=True),
+    Input("record-btn", "n_clicks"),
+    State("recording-store", "data"),
+    State("conversation-store", "data"),
+    prevent_initial_call=True
+)
+def add_transcribed(n_clicks, recording_state, conversation):
+    if recording_state is False:  # Only process after recording has stopped
+        filepath = "/home/tuquan/rag_ui/src/rag_ui/data/audio/recorded_audio.wav"
+        enhanced_path = "/home/tuquan/rag_ui/src/rag_ui/data/audio/enhanced.wav"
+        
+        # Check if the file exists before processing
+        if os.path.exists(filepath):
             enhance(filepath, enhanced_path)
             
             transcribed = whisper_api(enhanced_path)
-
+            
             if not transcribed or not transcribed.strip():
-                return no_update, "fas fa-microphone"
+                return no_update
+                
             new_conversation = list(conversation) if conversation else []
             # Append the user's message.
             new_conversation.append({"role": "user", "content": transcribed})
             # Append a placeholder assistant response, marked as loading.
             new_conversation.append({"role": "assistant", "content": "", "loading": True})
-
-            return new_conversation, "fas fa-microphone"
-        else:
-            return no_update, "fas fa-circle"
-        
-    # -------------------------------------------------------------------------------
-    # Client side recording callback
-    # -------------------------------------------------------------------------------
-    clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggleRecording'
-        ),
-        Output("recording-store", "data"),
-        Input("record-btn", "n_clicks"),
-        State("recording-store", "data"),
-        prevent_initial_call=True
-    )
+            
+            return new_conversation
     
+    return no_update
+
+# -------------------------------------------------------------------------------
+# Client side recording callback
+# -------------------------------------------------------------------------------
+clientside_callback(
+    ClientsideFunction(
+        namespace='clientside',
+        function_name='toggleRecording'
+    ),
+    Output("recording-store", "data"),
+    Output("raw-path", "data"),
+    Output("record-icon", "className"),
+    Input("record-btn", "n_clicks"),
+    State("recording-store", "data"),
+    prevent_initial_call=True
+)

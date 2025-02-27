@@ -15,6 +15,7 @@ layout = html.Div(
         dcc.Store(id="enhanced-audio-state", data=False), # Track if enhanced audio
         dcc.Store(id="transcription-results-store", data=""), # Track transcription results
         dcc.Store(id="raw-audio-path", data=""), # Track raw audio path
+        dcc.Store(id="trash", data=""), # Placeholder for unused store
 
         html.Div(
             id="speech-widget-bar",

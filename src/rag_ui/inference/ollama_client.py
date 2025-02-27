@@ -16,7 +16,13 @@ def ollama_chat_response(
     #         yield part['message']['content']
     # else:
     response = client.chat(model, messages, stream=False)
-    return response['message']['content']
+    full_response = response['message']['content']
+
+    if 'deepseek' in model:
+        true_response = full_response.split('<think>')[-1]
+        return true_response
+
+    return full_response
 
 def ollama_embed_response(
         model: str, 
