@@ -13,7 +13,6 @@ ollama = "^0.4.7"
 pymilvus = "^2.5.4"
 markitdown = "^0.0.1a3"
 ffmpeg-python = "^0.2.0"
-faster-whisper = "^1.1.1"
 transformers = "^4.48.3"
 scipy = "^1.15.2"
 

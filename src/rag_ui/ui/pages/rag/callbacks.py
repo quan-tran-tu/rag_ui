@@ -71,9 +71,8 @@ def register_callbacks(*args):
     @callback(
         Output("chat-container", "children"),
         Input("conversation-store", "data"),
-        State("search-mode", "data")
     )
-    def update_chat(conversation, search):
+    def update_chat(conversation):
         print("Updated conversation:", conversation)  # Debug print.
         if not conversation:
             return []
@@ -115,7 +114,7 @@ def register_callbacks(*args):
                         className="loading-dots"
                     )
                 else:
-                    if search:
+                    if msg['json_res']:
                         content = create_product_div(msg["json_res"]) # Create a html.Div with the product info
                     else:
                         content = msg["content"]
