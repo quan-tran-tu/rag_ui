@@ -157,3 +157,21 @@ def register_callbacks():
         State("speech-recording-store", "data"),
         prevent_initial_call=True
     )
+
+    # -------------------------------------------------------------------------------
+    # Update raw audio player when recording
+    # -------------------------------------------------------------------------------
+    @callback(
+        Output("raw-audio-player", "src", allow_duplicate=True),
+        Output("raw-audio-state", "data", allow_duplicate=True),
+        Input("speech-recording-store", "data"),
+        State("raw-audio-path", "data"),
+        prevent_initial_call=True
+    )
+    def update_raw_audio_player(is_recording, path):
+        if not is_recording:
+            with open(path, 'rb') as audio_file:
+                encoded_audio = base64.b64encode(audio_file.read()).decode()
+            audio_src = f"data:audio/wav;base64,{encoded_audio}"
+            return audio_src, True
+        return no_update, no_update
