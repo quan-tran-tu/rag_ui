@@ -29,7 +29,7 @@ def to_text(file_path: str) -> str:
     assert res.encode('utf-8') # Ensure the string can be encoded to utf-8 for Ollama
     return res
 
-def to_chunks(text: str) -> list[str]:
+def to_chunks_words(text: str) -> list[str]:
     """
     Split the text into chunks of text with a maximum number of tokens.
     """
@@ -58,4 +58,51 @@ def to_chunks(text: str) -> list[str]:
     # Add the last sentence (if any) to it own chunk
     if current_chunk:
         chunks.append(".".join(current_chunk))
+    return chunks
+
+def to_chunks_paragraphs(text: str) -> list[str]:
+    """
+    Chunks a markdown string by paragraphs while preserving header context.
+    
+    Args:
+        text: A markdown string
+        
+    Returns:
+        A list of chunks where each chunk contains a header and a paragraph
+    """
+    lines = text.strip().split('\n')
+    chunks = []
+    current_header = ""
+    current_chunk = ""
+    
+    for line in lines:
+        # Check if line is a header (starts with #)
+        if line.startswith('#'):
+            # If we have a chunk in progress, save it first
+            if current_chunk:
+                chunks.append(f"{current_header}\n{current_chunk}")
+                current_chunk = ""
+            
+            # Update the current header
+            current_header = line
+        elif line.strip() == '':
+            # Empty line indicates a paragraph break
+            if current_chunk:
+                chunks.append(f"{current_header}\n{current_chunk}")
+                current_chunk = ""
+        else:
+            # If we're starting a new paragraph and don't have a header yet, use empty header
+            if not current_header and not current_chunk:
+                current_header = ""
+            
+            # Add line to current chunk
+            if current_chunk:
+                current_chunk += f"\n{line}"
+            else:
+                current_chunk = line
+    
+    # Don't forget to add the last chunk if there is one
+    if current_chunk:
+        chunks.append(f"{current_header}\n{current_chunk}")
+    
     return chunks
