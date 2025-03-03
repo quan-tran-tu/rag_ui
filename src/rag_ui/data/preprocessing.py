@@ -1,4 +1,7 @@
 from markitdown import MarkItDown
+from marker.converters.pdf import PdfConverter
+from marker.models import create_model_dict
+from marker.config.parser import ConfigParser
 
 from rag_ui.core.config import config
 
@@ -6,6 +9,20 @@ def to_text(file_path: str) -> str:
     """
     Read the content of a document as string using markitdown.
     """
+    if file_path.endswith(".pdf"):
+        config = {
+            "output_format": "markdown",
+            "output_dir": "/home/tuquan/rag_ui/src/rag_ui/data/marker-output/"
+        }
+        config_parser = ConfigParser(config)
+
+        converter = PdfConverter(
+            config=config_parser.generate_config_dict(),
+            artifact_dict=create_model_dict(),
+        )
+        rendered = converter(file_path)
+        return rendered.markdown
+    
     md = MarkItDown()
     result = md.convert(file_path)
     res = result.text_content

@@ -1,6 +1,5 @@
-.env
+# .env
 **/__pycache__/
 **/documents/
 **/audio/
 *.db
-whisper.cpp/*
