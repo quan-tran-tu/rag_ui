@@ -117,8 +117,12 @@ def register_callbacks(*args):
                     if msg['json_res']:
                         content = create_product_div(msg["json_res"]) # Create a html.Div with the product info
                     else:
-                        content = msg["content"]
-            messages.append(html.Div(dcc.Markdown(content, mathjax=True), style=style))
+                        content = dcc.Markdown(
+                            msg["content"],
+                            mathjax=True,
+                            style={"color": "#fff"}
+                        )
+            messages.append(html.Div(content, style=style))
         return html.Div(messages, style={"display": "flex", "flexDirection": "column"})
 
     # -------------------------------------------------------------------------------
