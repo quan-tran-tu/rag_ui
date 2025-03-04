@@ -1,7 +1,8 @@
 from pymilvus import MilvusClient
 
-from rag_ui.data.preprocessing import to_chunks
+from rag_ui.data.preprocessing import to_chunks_paragraphs
 from rag_ui.inference.ollama_client import ollama_embed_response
+from rag_ui.inference.embed import embed_api
 from rag_ui.core.config import config
 
 MILVUS_METRIC_TYPE = "COSINE"
@@ -47,8 +48,9 @@ def get_search_results(client, collection_name: str, query_vector, output_fields
 def insert(client, text, file_path, collection_name):
     """Insert the embeddings gotten from text chunks with the correspond text and file path"""
     data = []
-    chunks = to_chunks(text)
-    embeddings = ollama_embed_response(config.EMBEDDING_MODEL, chunks)
+    chunks = to_chunks_paragraphs(text)
+    # embeddings = ollama_embed_response(config.EMBEDDING_MODEL, chunks)
+    embeddings = embed_api(chunks)
     for chunk, embedding in zip(chunks, embeddings):
         data.append({"vector": embedding, "text": chunk, "file_path": file_path})
     try: 

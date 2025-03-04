@@ -25,5 +25,9 @@ class Config:
     @property
     def WHISPER_NGROK_URL(self):
         return os.getenv("WHISPER_NGROK_URL")
+
+    @property
+    def EMBED_NGROK_URL(self):
+        return os.getenv("EMBED_NGROK_URL")
     
 config = Config()

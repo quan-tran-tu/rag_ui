@@ -13,6 +13,7 @@ from rag_ui.data.preprocessing import to_text
 from rag_ui.db.vectorstore import insert, get_search_results
 from rag_ui.core.modules.speech_enhance import enhance
 from rag_ui.inference.whisper import whisper_api
+from rag_ui.inference.embed import embed_api
 
 UPLOAD_FOLDER = "./src/rag_ui/data/documents/"
 
@@ -153,7 +154,8 @@ def register_callbacks(*args):
                     latest_user_message = get_latest_user_message(new_conversation[:i])
 
                     if not search:
-                        embedding = ollama_embed_response(config.EMBEDDING_MODEL, [latest_user_message])[0]
+                        # embedding = ollama_embed_response(config.EMBEDDING_MODEL, [latest_user_message])[0]
+                        embedding = embed_api([latest_user_message])[0]
                         # Search for similar embeddings in the Milvus database
                         search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
                         retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
