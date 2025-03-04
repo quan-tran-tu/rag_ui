@@ -1,5 +1,6 @@
 import os
-
+import json
+from dash import html
 
 def save_uploaded_file(file_content, filename, folder):
     """Saves uploaded file to the specified directory."""
@@ -19,8 +20,20 @@ def get_latest_user_message(conversation) -> str:
             return conversation[l]["content"]
     return ""
 
-import json
-from dash import html, dcc
+def get_history(conversation, depth: int = 2) -> list:
+    """
+    Get past user messages to add more context
+    Args:
+        depth: The number of past messages to retrieve
+    """
+    history = []
+    l = len(conversation)
+    while l > 0 and depth > 0:
+        l -= 1
+        if conversation[l]["role"] == "user":
+            history.append(conversation[l]["content"])
+            depth -= 1
+    return history
 
 def create_product_div(json_res):
     """

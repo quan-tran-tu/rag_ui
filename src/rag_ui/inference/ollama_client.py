@@ -15,10 +15,11 @@ def ollama_chat_response(
         client: Client,
         tool_call=False, 
         context=None,
-        user_message=None, 
+        history=None,
+        # user_message=None, 
     ):    
     if tool_call:
-        messages = construct_prompt(user_message, context)
+        messages = construct_prompt(history, context)
 
         available_functions = {
             'websosanh_search': websosanh_search,
@@ -26,7 +27,8 @@ def ollama_chat_response(
         response = client.chat(
             model,
             messages,
-            tools=[websosanh_search]
+            tools=[websosanh_search],
+            keep_alive=-1
         )
         for tool in response.message.tool_calls or []:
             function_to_call = available_functions.get(tool.function.name)
@@ -35,15 +37,8 @@ def ollama_chat_response(
                 context = products_json
             else:
                 print('Function not found:', tool.function.name)
-        # if response.message.tool_calls:
-        #     messages.append(response.message)
-        #     messages.append({
-        #         "role": "tool",
-        #         "content": products_json,
-        #         "name": tool.function.name
-        #     })
 
-    messages = construct_prompt(user_message, context)
+    messages = construct_prompt(history, context)
     final_response = client.chat(model, messages, keep_alive=-1)
     full_response = final_response['message']['content']
     if 'deepseek' in model:
@@ -59,8 +54,7 @@ def ollama_product_call(
         client: Client,
         user_message: str = None
     ):
-    # Heuristicly calling websosanh_search
-    
+    """Heuristicly calling websosanh_search"""
     # Recognize user intent to buy something
     response = client.chat(
         model=model,
@@ -80,49 +74,10 @@ def ollama_product_call(
     item = response['message']['content']
     json_res = ""
     if item == 'None':
-        # # Casual response
-        # full_response = client.chat(
-        #     model=model,
-        #     messages=[
-        #         {
-        #             "role": "system", 
-        #             "content": """You are great at casual conversation, 
-        #             response with a casual message"""
-        #         },
-        #         {
-        #             "role": "user",
-        #             "content": user_message
-        #         }
-        #     ]
-        # )
         pass
     else:
         # Call the function
         json_res = websosanh_search(keyword=item)
-
-    #     # Continue the conversation
-    #     full_response = client.chat(
-    #         model=model,
-    #         messages=[
-    #             {
-    #                 "role": "system", 
-    #                 "content": f"""You are great at customer service, the user asked for a product, 
-    #                 and the information about the product has been provided in the <context> tag, 
-    #                 please respond to the user in an organized format which specified the product's 
-    #                 'productName', 'price', 'detailUrl', 'merchantDomain', 'provins', 'image'.
-    #                 <context>{json_res}</context>"""
-    #             },
-    #             {
-    #                 "role": "user",
-    #                 "content": user_message
-    #             }
-    #         ]
-    #     )
-    # full_response = full_response['message']['content']
-    # if 'deepseek' in model:
-    #     true_response = full_response.split('</think>')[-1]
-    #     return true_response, json_res
-    # return full_response, json_res
     return json_res
 
 def ollama_embed_response(
