@@ -15,13 +15,11 @@ def construct_prompt(user_message: str, context: str | None = None) -> list[dict
         You are a precise and helpful AI assistant. Your task is to answer questions based on the provided context information. Always prioritize information from the context over your general knowledge.
 
         - Keep answers concise (2-6 sentences) and directly address the question
-        - ALWAYS format your entire response using markdown with MathJax support for equations
-        - Ensure ALL mathematical expressions are properly enclosed in MathJax delimiters (e.g., $...$ for inline math or $$...$$) for proper rendering
-        - Properly escape all special characters and subscripts in mathematical expressions
-        - Ensure curly braces {} are properly used for grouping in subscripts and superscripts
+        - Format your entire response using markdown with MathJax support for equations
+        - For mathematical expressions, use single $ for inline math and double $$ for display math
+        - Write Latex expression in MathJax format
         - If the context doesn't contain the answer, acknowledge this limitation
         - Structure your response: first provide the direct answer, then support with relevant details
-        - Cite specific parts of the context when applicable
         - Respond in the same language as the user's question
         """
 
@@ -35,16 +33,6 @@ def construct_prompt(user_message: str, context: str | None = None) -> list[dict
         <question>
         {user_message}
         </question>
-
-        First, identify the key information needed to answer the question.
-        Then, provide a clear and concise response strictly based on the context provided.
-        Format your entire answer in markdown with MathJax support.
-        IMPORTANT: 
-        - Ensure ALL mathematical expressions are properly enclosed in MathJax delimiters ($...$ for inline math or $$...$$).
-        - When writing mathematical expressions, properly escape all subscripts and superscripts using curly braces.
-        - For example, write "\\\\mathbb{{E}}_{{{{\\\\mathbf{{x}} \\\\sim p_{{\\\\text{{data}}}}}}}}" instead of "\\\\mathbb{{E}}_{{\\\\mathbf{{x}}\\\\sim p_{{\\\\text{{data}}}}}}"
-        - Always check that curly braces are properly balanced and escaped in LaTeX expressions.
-        Respond in the same language as the question.
         """
     else:
         # General-purpose Q&A prompt (without context)
@@ -52,9 +40,6 @@ def construct_prompt(user_message: str, context: str | None = None) -> list[dict
         You are a helpful AI assistant. Answer questions accurately and concisely.
 
         - Keep answers brief (ideally 2-6 sentences)
-        - Format responses in markdown with MathJax support for equations
-        - Ensure ALL mathematical expressions use proper MathJax delimiters ($...$ for inline, $$...$$)
-        - When using math, properly escape all subscripts and superscripts with curly braces
         - Respond in the same language as the user's question
         """
 
@@ -62,8 +47,6 @@ def construct_prompt(user_message: str, context: str | None = None) -> list[dict
         <question>
         {user_message}
         </question>
-
-        Provide a clear and helpful response to this question.
         """
 
     # Construct the messages list

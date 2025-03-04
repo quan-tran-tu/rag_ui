@@ -1,19 +1,22 @@
 from ollama import Client
 
-from rag_ui.core.config import config
 from rag_ui.inference.prompt import construct_prompt
 from rag_ui.core.modules.search import websosanh_search
 
-OLLAMA_HOST = config.OLLAMA_NGROK_URL
+
+def fix_latex_response(response: str) -> str:
+    response = response.replace('\\(', '$')
+    response = response.replace('\\)', '$')
+
+    return response
 
 def ollama_chat_response(
         model: str, 
+        client: Client,
         tool_call=False, 
         context=None,
-        user_message=None
-    ):
-    client = Client(host=OLLAMA_HOST)
-    
+        user_message=None, 
+    ):    
     if tool_call:
         messages = construct_prompt(user_message, context)
 
@@ -41,19 +44,21 @@ def ollama_chat_response(
         #     })
 
     messages = construct_prompt(user_message, context)
-    final_response = client.chat(model, messages)
+    final_response = client.chat(model, messages, keep_alive=-1)
     full_response = final_response['message']['content']
     if 'deepseek' in model:
         true_response = full_response.split('</think>')[-1]
         return true_response
 
+    full_response = fix_latex_response(full_response)
+
     return full_response
 
 def ollama_product_call(
         model: str,
+        client: Client,
         user_message: str = None
     ):
-    client = Client(host=OLLAMA_HOST)
     # Heuristicly calling websosanh_search
     
     # Recognize user intent to buy something
@@ -122,10 +127,9 @@ def ollama_product_call(
 
 def ollama_embed_response(
         model: str, 
+        client: Client,
         input: list[str], 
     ) -> list[list[float]]:
-
-    client = Client(host=OLLAMA_HOST)
     response = client.embed(model, input)
     return response['embeddings']
 

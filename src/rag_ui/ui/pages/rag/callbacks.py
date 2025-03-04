@@ -154,7 +154,7 @@ def register_callbacks(*args):
                     latest_user_message = get_latest_user_message(new_conversation[:i])
 
                     if not search:
-                        # embedding = ollama_embed_response(config.EMBEDDING_MODEL, [latest_user_message])[0]
+                        # embedding = ollama_embed_response(config.EMBEDDING_MODEL, args[1], [latest_user_message])[0]
                         embedding = embed_api([latest_user_message])[0]
                         # Search for similar embeddings in the Milvus database
                         search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
@@ -164,6 +164,7 @@ def register_callbacks(*args):
                         # Get the assistant's response from Ollama
                         answer = ollama_chat_response(
                             config.LLM_MODEL,
+                            args[1],
                             context=context,
                             user_message=latest_user_message
                         )
@@ -176,6 +177,7 @@ def register_callbacks(*args):
                         answer = ""
                         json_res = ollama_product_call(
                             config.LLM_MODEL,
+                            args[1],
                             user_message=latest_user_message
                         )
 

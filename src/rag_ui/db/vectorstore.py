@@ -14,25 +14,28 @@ def init_milvus_client():
     client = MilvusClient(milvus_endpoint)
     return client
 
-def check_collection(client, collection_name: str = None, drop_old: bool = True):
+def check_collection(client, collection_name: str = None, drop_old: bool = False) -> bool:
     """Check if the collection existed in the vector database"""
     if client.has_collection(collection_name) and drop_old:
         client.drop_collection(collection_name)
     if client.has_collection(collection_name):
+        return True
         raise RuntimeError(
             f"Collection {collection_name} already exists. Set drop_old=True to create a new one instead."
         )
+    return False
         
 def create_collection(client, collection_name: str, dim: int):
     """Create the collection in the vector database if the collection doesn't exist"""
-    check_collection(client, collection_name)
-    return client.create_collection(
-        collection_name=collection_name,
-        dimension=dim,
-        metric_type=MILVUS_METRIC_TYPE,
-        consistency_level="Strong",
-        auto_id=True,
-    )
+    has_collection = check_collection(client, collection_name)
+    if not has_collection:
+        client.create_collection(
+            collection_name=collection_name,
+            dimension=dim,
+            metric_type=MILVUS_METRIC_TYPE,
+            consistency_level="Strong",
+            auto_id=True,
+        )
 
 def get_search_results(client, collection_name: str, query_vector, output_fields):
     """Get the search result with the output fields list"""
