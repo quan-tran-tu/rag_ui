@@ -1,19 +1,20 @@
 import os
 import base64
-
-import requests
+import json
 
 from dash import html, no_update, Input, Output, State, clientside_callback, ClientsideFunction, callback, dcc
 
-from rag_ui.inference.ollama_client import ollama_chat_response, ollama_embed_response, ollama_product_call
+from rag_ui.inference.ollama_client import ollama_chat_response, ollama_product_call, intent_recognition
 from rag_ui.core.config import config
-from rag_ui.ui.helper import get_latest_user_message, save_uploaded_file, create_product_div
+from rag_ui.ui.helper import get_history, save_uploaded_file, create_product_div
 from rag_ui.ui.pages.rag.layout import bottom_style, center_style
 from rag_ui.data.preprocessing import to_text
-from rag_ui.db.vectorstore import insert, get_search_results
+from rag_ui.db.vectorstore import insert_batch, get_search_results
 from rag_ui.core.modules.speech_enhance import enhance
 from rag_ui.inference.whisper import whisper_api
 from rag_ui.inference.embed import embed_api
+from rag_ui.core.modules.web import get_raw
+
 
 UPLOAD_FOLDER = "./src/rag_ui/data/documents/"
 
@@ -74,7 +75,6 @@ def register_callbacks(*args):
         Input("conversation-store", "data"),
     )
     def update_chat(conversation):
-        print("Updated conversation:", conversation)  # Debug print.
         if not conversation:
             return []
         
@@ -137,7 +137,7 @@ def register_callbacks(*args):
     @callback(
         Output("conversation-store", "data", allow_duplicate=True),
         Input("conversation-store", "data"),
-        State("search-mode", "data"),
+        State("search-product-mode", "data"),
         prevent_initial_call=True
     )
     def update_machine_answer(conversation, search):
@@ -150,41 +150,44 @@ def register_callbacks(*args):
             if msg.get("role") == "assistant" and msg.get("loading"):
                 try:
                     json_res = ""
-                    # Get the latest user message
-                    latest_user_message = get_latest_user_message(new_conversation[:i])
+                    history = get_history(new_conversation, depth=2)
+                    latest_user_message = history[0]
 
                     if not search:
-                        # embedding = ollama_embed_response(config.EMBEDDING_MODEL, args[1], [latest_user_message])[0]
-                        embedding = embed_api([latest_user_message])[0]
-                        # Search for similar embeddings in the Milvus database
-                        search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
-                        retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
-                        print("retrieved text: ", retrieved)
-                        context = "\n".join([f"File: {file_path}\nRelevance Text: {text}" for file_path, text in retrieved])
+                        # Add a layer to recognize user's intent
+                        intent_json = intent_recognition(
+                            config.LLM_MODEL, args[1], latest_user_message
+                        )
+                        intent = json.loads(intent_json)
+                        if intent.get('Summarize'):
+                            url = intent.get('Summarize')
+                            context = get_raw(url)
+                            history = [latest_user_message]
+                        else:
+                            # embedding = ollama_embed_response(config.EMBEDDING_MODEL, args[1], [latest_user_message])[0]
+                            embedding = embed_api([latest_user_message])[0]
+                            # Search for similar embeddings in the Milvus database
+                            search_res = get_search_results(args[0], "documents", embedding, ["text", "file_path"])
+                            retrieved = [(res["entity"]["file_path"], res["entity"]["text"]) for res in search_res[0]]
+                            context = "\n".join([f"File: {file_path}\nRelevance Text: {text}" for file_path, text in retrieved])
                         # Get the assistant's response from Ollama
                         answer = ollama_chat_response(
-                            config.LLM_MODEL,
-                            args[1],
+                            model=config.LLM_MODEL,
+                            client=args[1],
+                            history=history,
                             context=context,
-                            user_message=latest_user_message
                         )
                     else:
-                        # answer = ollama_chat_response(
-                        #     config.LLM_MODEL,
-                        #     user_message=latest_user_message,
-                        #     tool_call=True
-                        # )
                         answer = ""
                         json_res = ollama_product_call(
-                            config.LLM_MODEL,
-                            args[1],
+                            model=config.LLM_MODEL,
+                            client=args[1],
                             user_message=latest_user_message
                         )
 
                 except Exception as e:
                     answer = f"Request failed: {str(e)}"
 
-                print("answer:", answer)  # Debug print.
                 # Update the pending assistant message with the new answer
                 new_conversation[i]["loading"] = False
                 new_conversation[i]["content"] = answer
@@ -213,21 +216,27 @@ def register_callbacks(*args):
     # -------------------------------------------------------------------------------
     @callback(
         Output("alert-store", "data"),
-        Input("upload-doc", "contents"),
+        Input("upload-doc", "contents"), # List of uploaded files
         State("upload-doc", "filename"),
         prevent_initial_call=True
     )
-    def process_upload_file(contents, filename):
-        if not contents or not filename:
-            return no_update
-        _, content_string = contents.split(",")
-        file_bytes = base64.b64decode(content_string)
+    def process_upload_file(list_of_contents, list_of_names):
+        if list_of_contents is not None:
+            data_list = []
+            for contents, filename in zip(list_of_contents, list_of_names):
+                if not contents or not filename:
+                    return no_update
+                _, content_string = contents.split(",")
+                file_bytes = base64.b64decode(content_string)
 
-        file_path = save_uploaded_file(file_bytes, filename, UPLOAD_FOLDER)
-        text = to_text(file_path)
+                file_path = save_uploaded_file(file_bytes, filename, UPLOAD_FOLDER)
+                text = to_text(file_path)
 
-        res = insert(args[0], text, file_path, collection_name="documents")
-        return res
+                data_list.append({"text": text, "file_path": file_path})
+
+            res = insert_batch(args[0], data_list, collection_name="documents")
+            return res
+        return no_update
     
     # -------------------------------------------------------------------------------
     # Show to alert result from inserting data into milvus database.
@@ -295,10 +304,10 @@ clientside_callback(
 # Trigger search mode
 # -------------------------------------------------------------------------------
 @callback(
-    Output("search-mode", "data"),
-    Output("search-btn", "style"),
-    Input("search-btn", "n_clicks"),
-    State("search-mode", "data"),
+    Output("search-product-mode", "data"),
+    Output("search-product-btn", "style"),
+    Input("search-product-btn", "n_clicks"),
+    State("search-product-mode", "data"),
     prevent_initial_call=True
 )
 def toggle_search_mode(n_clicks, search_mode):
@@ -308,10 +317,13 @@ def toggle_search_mode(n_clicks, search_mode):
             "alignItems": "center",
             "background": "#303030",
             "border": "1px solid white",
-            "borderRadius": "20px",
-            "padding": "5px 10px",
-            "cursor": "pointer",  
-            "color": "white", 
+            "borderRadius": "50%",
+            "marginLeft": "5px",
+            "cursor": "pointer",
+            "color": "white",
+            "width": "40px",
+            "height": "40px",
+            "justifyContent": "center",
         }
     else:
         style = {
@@ -319,9 +331,12 @@ def toggle_search_mode(n_clicks, search_mode):
             "alignItems": "center",
             "background": "#303030",
             "border": "1px solid red",
-            "borderRadius": "20px",
-            "padding": "5px 10px",
-            "cursor": "pointer",  
+            "borderRadius": "50%",
+            "marginLeft": "5px",
+            "cursor": "pointer",
             "color": "red",
+            "width": "40px",
+            "height": "40px",
+            "justifyContent": "center",
         }
     return not search_mode, style

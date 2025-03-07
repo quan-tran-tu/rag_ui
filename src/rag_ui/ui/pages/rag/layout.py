@@ -73,7 +73,7 @@ layout = html.Div(
                             className="icon-button",
                             style={"marginLeft": "10px"}
                         ),
-                        multiple=False
+                        multiple=True
                     )
                 ]),
             ]
@@ -85,7 +85,9 @@ layout = html.Div(
         dcc.ConfirmDialog(id="alert-box"),
         dcc.Store(id="recording-store", data=False),
         dcc.Store(id="raw-path", data="./src/rag_ui/data/audio/recorded_audio.wav"),
-        dcc.Store(id="search-mode", data=False),
+        dcc.Store(id="search-product-mode", data=False),
+        # dcc.Store(id="database-mode", data=False),
+        # dcc.Store(id="database-url", data=""),
 
         # Chat container (positioned below the widget bar).
         html.Div(
@@ -157,26 +159,52 @@ layout = html.Div(
                                 "width": "100%",
                                 "background": "#303030",
                                 "display": "flex",
-                                "justifyContent": "space-between",  # Align search to the left and buttons to the right
+                                "justifyContent": "space-between",
                                 "padding": "10px"
                             },
                             children=[
-                                html.Button(
-                                    id="search-btn",
-                                    n_clicks=0,
+                                html.Div(
                                     style={
                                         "display": "flex",
                                         "alignItems": "center",
-                                        "background": "#303030",
-                                        "border": "1px solid white",
-                                        "borderRadius": "20px",
-                                        "padding": "5px 10px",
-                                        "cursor": "pointer",
-                                        "color": "white",
                                     },
                                     children=[
-                                        html.I(className="fas fa-globe", style={"marginRight": "8px"}),
-                                        html.Span("Search")
+                                        html.Button(
+                                            html.I(className="fas fa-cart-shopping"),
+                                            id="search-product-btn",
+                                            n_clicks=0,
+                                            style={
+                                                "display": "flex",
+                                                "alignItems": "center",
+                                                "background": "#303030",
+                                                "border": "1px solid white",
+                                                "borderRadius": "50%",
+                                                "marginLeft": "5px",
+                                                "cursor": "pointer",
+                                                "color": "white",
+                                                "width": "40px",
+                                                "height": "40px",
+                                                "justifyContent": "center",
+                                            },
+                                        ),
+                                        # html.Button(
+                                        #     html.I(className="fas fa-database"),
+                                        #     id="database-btn",
+                                        #     n_clicks=0,
+                                        #     style={
+                                        #         "display": "flex",
+                                        #         "alignItems": "center",
+                                        #         "background": "#303030",
+                                        #         "border": "1px solid white",
+                                        #         "borderRadius": "50%",
+                                        #         "marginLeft": "5px",
+                                        #         "cursor": "pointer",
+                                        #         "color": "white",
+                                        #         "width": "40px",
+                                        #         "height": "40px",
+                                        #         "justifyContent": "center",
+                                        #     },
+                                        # ),
                                     ]
                                 ),
                                 html.Div(
@@ -218,7 +246,6 @@ layout = html.Div(
                                 )
                             ]
                         )
-
                     ]
                 )
             ]

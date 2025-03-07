@@ -1,8 +1,6 @@
 import requests
 import json
 
-from rag_ui.core.models import Product
-
 WEBSOSANH_URL = "https://websosanh.vn/search-api/get-search-product"
 
 def websosanh_search(keyword: str) -> str:

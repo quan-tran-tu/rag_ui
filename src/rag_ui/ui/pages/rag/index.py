@@ -16,4 +16,11 @@ create_collection(milvus_client, "documents", config.EMBEDDING_DIM)
 layout = rag_layout
 
 ollama_client = Client(host=OLLAMA_HOST)
+# Seed ollama
+ollama_client.chat(
+    model=config.LLM_MODEL,
+    messages=[
+        {"role": "user", "content": "Xin chào"},
+    ]
+)
 register_callbacks(milvus_client, ollama_client)

@@ -1,7 +1,6 @@
 import dash
 import ffmpeg
 from flask import request
-from dash import html
 
 # Include Font Awesome for icons.
 external_stylesheets = [

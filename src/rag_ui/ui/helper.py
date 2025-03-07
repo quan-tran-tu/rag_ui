@@ -9,17 +9,6 @@ def save_uploaded_file(file_content, filename, folder):
         f.write(file_content)
     return file_path
 
-def get_latest_user_message(conversation) -> str:
-    """
-    Get the latest user message in the conversation list.
-    """
-    l = len(conversation)
-    while l > 0:
-        l -= 1
-        if conversation[l]["role"] == "user":
-            return conversation[l]["content"]
-    return ""
-
 def get_history(conversation, depth: int = 2) -> list:
     """
     Get past user messages to add more context
@@ -29,6 +18,7 @@ def get_history(conversation, depth: int = 2) -> list:
     history = []
     l = len(conversation)
     while l > 0 and depth > 0:
+        print("l", l)
         l -= 1
         if conversation[l]["role"] == "user":
             history.append(conversation[l]["content"])
@@ -37,142 +27,136 @@ def get_history(conversation, depth: int = 2) -> list:
 
 def create_product_div(json_res):
     """
-    Create a beautiful product display div from JSON product data.
+    Create a clean product display with each product on its own row,
+    image on the right, and light grey background.
     
     Args:
         json_res (str): JSON string containing product information
         
     Returns:
-        html.Div: A styled Dash HTML Div component displaying product information
+        html.Div: A styled Dash HTML Div component displaying product information in rows
     """
     try:
-        intro_text = html.Div([
-            html.H3("Kết quả tìm kiếm sản phẩm", style={
-                'textAlign': 'center',
-                'margin': '20px 0',
-                'color': '#fff',
-                'fontWeight': 'bold'
-            }),
-            html.P("Dưới đây là các sản phẩm phù hợp với yêu cầu tìm kiếm của bạn. Nhấp vào sản phẩm để xem chi tiết.", style={
-                'textAlign': 'center',
-                'fontSize': '14px',
-                'color': '#fff',
-                'marginBottom': '20px',
-                'maxWidth': '800px',
-                'margin': '0 auto 30px auto'
-            })
-        ])
-        conclusion_text = html.Div([
-            html.Hr(style={'marginTop': '30px', 'marginBottom': '20px'}),
-            html.Div([
-                html.P("Bạn có cần tìm kiếm thêm sản phẩm nào khác không?", style={
-                    'fontSize': '14px',
-                    'color': '#fff',
-                    'marginBottom': '10px',
-                    'textAlign': 'center'
-                }),
-            ], style={'maxWidth': '800px', 'margin': '0 auto'})
-        ])
         # Parse JSON string to list of product dictionaries
         products = json.loads(json_res)
-        
-        # Container for all products
-        product_cards = []
+
+        # Create product rows
+        product_rows = []
         
         for product in products:
-            # Create individual product card
-            product_card = html.Div([
-                # Product image and merchant section
+            product_row = html.Div([
+                # Product details section (left side)
+                html.Div([
+                    # Merchant tag
+                    html.Div(
+                        html.Span(product.get('merchantDomain', ''), 
+                            style={
+                                'backgroundColor': '#e6e6e6',
+                                'padding': '2px 8px',
+                                'borderRadius': '4px',
+                                'fontSize': '11px',
+                                'color': '#666'
+                            }
+                        ),
+                        style={'marginBottom': '10px'}
+                    ),
+                    
+                    # Product name
+                    html.A([
+                        html.H4(product.get('productName', ''), 
+                            style={
+                                'fontSize': '16px',
+                                'fontWeight': '500',
+                                'margin': '0 0 12px 0',
+                                'color': '#333',
+                                'overflow': 'hidden',
+                                'textOverflow': 'ellipsis',
+                                'display': '-webkit-box',
+                                'WebkitLineClamp': '2',
+                                'WebkitBoxOrient': 'vertical'
+                            })
+                    ], href=product.get('detailUrl', '#'), target="_blank", style={'textDecoration': 'none'}),
+                    
+                    # Price
+                    html.Div([
+                        html.Span(f"{product.get('price', '')}",
+                            style={
+                                'color': '#e63946',
+                                'fontSize': '18px',
+                                'fontWeight': '500',
+                            }
+                        )
+                    ], style={'marginBottom': '8px'}),
+                    
+                    # Location
+                    html.Div([
+                        html.Span(product.get('provins', ''),
+                            style={
+                                'fontSize': '13px',
+                                'color': '#666',
+                            }
+                        )
+                    ])
+                ], style={
+                    'flex': '1', 
+                    'padding': '15px 20px'
+                }),
+                
+                # Product image (right side)
                 html.Div([
                     html.A([
                         html.Img(
                             src=product.get('image', ''),
                             style={
-                                'maxWidth': '100%',
-                                'height': '180px',
-                                'objectFit': 'contain',
-                                'margin': 'auto',
-                                'display': 'block'
+                                'height': '120px',
+                                'width': '120px',
+                                'objectFit': 'contain'
                             }
                         )
-                    ], href=product.get('detailUrl', '#'), target="_blank"),
-                    html.Div([
-                        html.Span(product.get('merchantDomain', 'Không rõ'), 
-                                  style={
-                                      'backgroundColor': '#f8f9fa',
-                                      'padding': '3px 8px',
-                                      'borderRadius': '12px',
-                                      'fontSize': '12px',
-                                      'color': '#666'
-                                  })
-                    ], style={'textAlign': 'center', 'marginTop': '8px'})
-                ], style={'padding': '15px 10px'}),
-                
-                # Product details section
-                html.Div([
-                    html.A([
-                        html.H4(product.get('productName', 'Không có tên'), 
-                              style={
-                                  'fontSize': '16px',
-                                  'fontWeight': 'bold',
-                                  'margin': '0 0 10px 0',
-                                  'height': '40px',
-                                  'overflow': 'hidden',
-                                  'textOverflow': 'ellipsis',
-                                  'display': '-webkit-box',
-                                  'WebkitLineClamp': '2',
-                                  'WebkitBoxOrient': 'vertical',
-                                  'color': '#333'
-                              })
-                    ], href=product.get('detailUrl', '#'), target="_blank", style={'textDecoration': 'none'}),
-                    
-                    html.Div([
-                        html.Span(f"{product.get('price', 'Giá không rõ')}",
-                              style={
-                                  'color': '#e63946',
-                                  'fontSize': '18px',
-                                  'fontWeight': 'bold',
-                              })
-                    ], style={'marginBottom': '8px'}),
-                    
-                    html.Div([
-                        html.Span(f"Địa điểm: {product.get('provins', 'Không có địa điểm')}",
-                              style={
-                                  'fontSize': '13px',
-                                  'color': '#666',
-                              })
-                    ]),
-                ], style={'padding': '0 15px 15px 15px'})
+                    ], href=product.get('detailUrl', '#'), target="_blank")
+                ], style={
+                    'width': '150px', 
+                    'display': 'flex', 
+                    'alignItems': 'center', 
+                    'justifyContent': 'center',
+                    'padding': '10px'
+                })
             ], style={
-                'width': '300px',
-                'margin': '10px',
-                'border': '1px solid #e1e4e8',
-                'borderRadius': '8px',
-                'backgroundColor': 'white',
-                'boxShadow': '0 2px 5px rgba(0,0,0,0.05)',
-                'transition': 'transform 0.3s, box-shadow 0.3s',
-                'display': 'inline-block',
-                'verticalAlign': 'top',
-                'overflow': 'hidden'
-            }, className='product-card')
-            
-            product_cards.append(product_card)
-        
-        # Return container with all product cards
-        return html.Div([
-            intro_text,
-            html.Div(product_cards, style={
                 'display': 'flex',
-                'flexWrap': 'wrap',
-                'justifyContent': 'left',
-                'gap': '20px',
-                'padding': '10px'
+                'backgroundColor': '#f5f5f5',
+                'borderRadius': '6px',
+                'marginBottom': '12px',
+                'boxShadow': '0 1px 2px rgba(0,0,0,0.05)',
+                'overflow': 'hidden'
+            }, className='product-row')
+            
+            product_rows.append(product_row)
+        
+        # Return container with all product rows
+        return html.Div([
+            html.Div([
+                html.H3("Kết quả tìm kiếm", className="search-title", style={
+                    'textAlign': 'center',
+                    'margin': '5px 0',
+                    'color': '#fff',
+                    'fontWeight': '500'
+                })
+            ]),
+            html.Div(product_rows, style={
+                'maxWidth': '800px',
+                'margin': '0 auto',
+                'padding': '10px 20px'
             }),
-            conclusion_text
+            html.Div([
+                html.P("Tìm kiếm sản phẩm khác?", style={
+                    'textAlign': 'center',
+                    'fontWeight': '500',
+                    'color': '#fff',
+                    'margin': '5px 0 5px 0'
+                })
+            ])
         ])
     
     except Exception as e:
-        # Return error message if JSON parsing fails
-        return html.Div(f"Error displaying products: {str(e)}", 
+        return html.Div(f"Lỗi hiển thị sản phẩm: {str(e)}", 
                       style={'color': 'red', 'padding': '20px'})
-

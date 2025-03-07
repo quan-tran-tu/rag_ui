@@ -1,3 +1,6 @@
+import os
+from multiprocessing import Pool
+
 from pymilvus import MilvusClient
 
 from rag_ui.data.preprocessing import to_chunks_paragraphs
@@ -61,3 +64,13 @@ def insert(client, text, file_path, collection_name):
         return f"Total number of chunks inserted: {mr['insert_count']}"
     except Exception as e:
         return f"Error inserting data: {e}"
+    
+def insert_batch(client, data_list, collection_name):
+    """
+    Batch insert
+    Args:
+        data: [{"text": str, "file_path": str}]
+    """
+    with Pool(processes=os.cpu_count() - 1) as pool:
+        pool.starmap(insert, [(client, d["text"], d["file_path"], collection_name) for d in data_list])
+    return "Successfully processed files."
